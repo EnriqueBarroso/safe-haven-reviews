@@ -1,209 +1,204 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ProfileCard } from "@/components/profile-card"
-import {
-    Search, Loader2, ArrowLeft, Filter,
-    Euro, Users, MapPin, Tag
-} from "lucide-react"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { StatsPanel } from "@/components/profile/StatsPanel"
+import { ReviewCard } from "@/components/profile/ReviewCard"
+import { QuestionCard } from "@/components/profile/QuestionCard"
+import { ShareBBCode } from "@/components/profile/share-bbcode"
+import { ArrowLeft, Loader2, MapPin, ShieldCheck } from "lucide-react"
 
-export default function ProfilesPage() {
-    const [profiles, setProfiles] = useState<any[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+interface Stats {
+  totalReviews: number
+  overallAverage: number
+  veracityAvg: number
+  punctualityAvg: number
+  communicationAvg: number
+  hygieneAvg: number
+}
 
-    // Estados para búsqueda y filtros
-    const [searchQuery, setSearchQuery] = useState("")
-    const [priceFilter, setPriceFilter] = useState<string>("all")
-    const [categoryFilter, setCategoryFilter] = useState<string>("all")
-    const [typeFilter, setTypeFilter] = useState<string>("all")
+const EMPTY_STATS: Stats = {
+  totalReviews: 0,
+  overallAverage: 0,
+  veracityAvg: 0,
+  punctualityAvg: 0,
+  communicationAvg: 0,
+  hygieneAvg: 0,
+}
 
-    useEffect(() => {
-        async function fetchProfiles() {
-            setIsLoading(true)
+function calcStats(reviews: any[]): Stats {
+  const actual = reviews.filter((r) => r.type !== "question")
+  const total = actual.length
+  if (total === 0) return { ...EMPTY_STATS, totalReviews: reviews.length }
+  const sum = (key: string) => actual.reduce((acc, r) => acc + (r[key] || 0), 0)
+  return {
+    totalReviews: reviews.length,
+    overallAverage: Number((sum("overall") / total).toFixed(1)),
+    veracityAvg: Number((sum("veracity") / total).toFixed(1)),
+    punctualityAvg: Number((sum("punctuality") / total).toFixed(1)),
+    communicationAvg: Number((sum("communication") / total).toFixed(1)),
+    hygieneAvg: Number((sum("hygiene") / total).toFixed(1)),
+  }
+}
 
-            // ── NUEVA CONSULTA: Trae también las reseñas y sus fotos ──
-            let query = supabase
-                .from('profiles')
-                .select(`
-                    *,
-                    reviews (
-                        review_images ( image_url )
-                    )
-                `)
-                .order('created_at', { ascending: false })
+export default function ProfileDetailPage() {
+  // useParams() en App Router — el nombre del parámetro
+  // coincide con el nombre de la carpeta: [slug]
+  const params = useParams()
+  const slug = params.slug as string
 
-            // Filtro de texto (nombre o ciudad)
-            if (searchQuery.trim() !== "") {
-                query = query.or(`name.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%`)
-            }
+  const [profile, setProfile] = useState<any>(null)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [stats, setStats] = useState<Stats>(EMPTY_STATS)
+  const [isLoading, setIsLoading] = useState(true)
 
-            // Filtro de Rango de Precio
-            if (priceFilter !== "all") {
-                query = query.eq('price_range', priceFilter)
-            }
+  const profileUrl = typeof window !== "undefined" ? window.location.href : ""
 
-            // Filtro de Categoría
-            if (categoryFilter !== "all") {
-                query = query.eq('category', categoryFilter)
-            }
+  useEffect(() => {
+    // Guard: si el slug no llegó aún (puede ocurrir en el primer render)
+    // no lanzamos la query para evitar el bucle de carga
+    if (!slug) return
 
-            // Filtro de Tipo de Servicio
-            if (typeFilter !== "all") {
-                query = query.eq('service_type', typeFilter)
-            }
+    async function fetchData() {
+      setIsLoading(true)
 
-            const { data, error } = await query
+      // Buscamos por slug, no por id
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("slug", slug)
+        .single()
 
-            if (!error && data) {
-                setProfiles(data)
-            }
-            setIsLoading(false)
-        }
+      if (error || !profileData) {
+        console.error("Perfil no encontrado para slug:", slug, error?.message)
+        setIsLoading(false)
+        return
+      }
 
-        const timer = setTimeout(() => {
-            fetchProfiles()
-        }, 300)
+      setProfile(profileData)
 
-        return () => clearTimeout(timer)
-    }, [searchQuery, priceFilter, categoryFilter, typeFilter])
+      const { data: reviewsData } = await supabase
+        .from("reviews")
+        .select("*, review_images(*)")
+        .eq("profile_id", profileData.id)
+        .order("created_at", { ascending: false })
 
+      if (reviewsData) {
+        setReviews(reviewsData)
+        setStats(calcStats(reviewsData))
+      }
+
+      setIsLoading(false)
+    }
+
+    fetchData()
+  }, [slug]) // Dependencia: slug, no id
+
+  // ── Guards ─────────────────────────────────────────────
+  if (isLoading) {
     return (
-        <div className="container mx-auto py-10 px-4 min-h-[80vh]">
-            <Button variant="ghost" asChild className="mb-6 gap-2 -ml-3">
-                <Link href="/">
-                    <ArrowLeft className="h-4 w-4" /> Volver al Inicio
-                </Link>
-            </Button>
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    )
+  }
 
-            <div className="mb-10">
-                <h1 className="text-4xl font-bold tracking-tight mb-4">Explorar Directorio</h1>
+  if (!profile) {
+    return (
+      <div className="container mx-auto py-20 text-center">
+        <h1 className="text-2xl font-bold mb-4">Perfil no encontrado</h1>
+        <p className="text-muted-foreground mb-8">
+          El perfil que buscas no existe o ha sido eliminado.
+        </p>
+        <Button asChild><Link href="/profiles">Volver a Explorar</Link></Button>
+      </div>
+    )
+  }
 
-                {/* BUSCADOR PRINCIPAL */}
-                <div className="relative max-w-2xl mb-6">
-                    <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        type="text"
-                        placeholder="Buscar por nombre o ciudad..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-14 pl-12 text-base rounded-xl bg-secondary/50 border-border/60 focus-visible:ring-primary"
-                    />
-                </div>
+  // ── Render ─────────────────────────────────────────────
+  return (
+    <div className="container mx-auto py-10 px-4 max-w-5xl">
+      <Button variant="ghost" asChild className="mb-6 gap-2 -ml-3">
+        <Link href="/profiles"><ArrowLeft className="h-4 w-4" /> Volver a Explorar</Link>
+      </Button>
 
-                {/* BARRA DE FILTROS AVANZADOS */}
-                <div className="flex flex-wrap gap-3 items-center">
-                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2">
-                        <Filter className="h-4 w-4" /> Filtros:
-                    </div>
+      <div className="grid gap-8 md:grid-cols-[1fr_350px]">
+        {/* Columna principal */}
+        <div className="space-y-8">
 
-                    <Select value={priceFilter} onValueChange={setPriceFilter}>
-                        <SelectTrigger className="w-[140px] bg-background">
-                            <Euro className="h-4 w-4 mr-2 opacity-50" />
-                            <SelectValue placeholder="Precio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Cualquier precio</SelectItem>
-                            <SelectItem value="<150">Menos de 150€</SelectItem>
-                            <SelectItem value=">150">Más de 150€</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger className="w-[140px] bg-background">
-                            <Users className="h-4 w-4 mr-2 opacity-50" />
-                            <SelectValue placeholder="Categoría" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todas</SelectItem>
-                            <SelectItem value="chica">Chicas</SelectItem>
-                            <SelectItem value="trans">Trans</SelectItem>
-                            <SelectItem value="asiatica">Asiáticas</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                        <SelectTrigger className="w-[160px] bg-background">
-                            <Tag className="h-4 w-4 mr-2 opacity-50" />
-                            <SelectValue placeholder="Tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Cualquier tipo</SelectItem>
-                            <SelectItem value="independiente">Independiente</SelectItem>
-                            <SelectItem value="piso_chicas">Piso de chicas</SelectItem>
-                            <SelectItem value="agencia">Agencia</SelectItem>
-                            <SelectItem value="masajes">Masajista / Piso masajes</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    {(priceFilter !== "all" || categoryFilter !== "all" || typeFilter !== "all" || searchQuery !== "") && (
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                setPriceFilter("all");
-                                setCategoryFilter("all");
-                                setTypeFilter("all");
-                                setSearchQuery("");
-                            }}
-                            className="text-xs text-primary"
-                        >
-                            Limpiar filtros
-                        </Button>
-                    )}
-                </div>
+          {/* Cabecera del perfil */}
+          <div className="bg-card p-6 md:p-8 rounded-3xl border shadow-sm">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {profile.category && (
+                <Badge variant="outline" className="capitalize">{profile.category}</Badge>
+              )}
+              {profile.price_range && (
+                <Badge className="bg-primary text-primary-foreground">{profile.price_range}€</Badge>
+              )}
             </div>
 
-            {isLoading ? (
-                <div className="flex justify-center py-20">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                </div>
-            ) : profiles.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {profiles.map((profile) => {
-                        // ── LÓGICA DE PORTADA DINÁMICA ──
-                        const coverImage = profile.image_url || 
-                            profile.reviews?.flatMap((r: any) => r.review_images)?.find((img: any) => img?.image_url)?.image_url || 
-                            null;
+            <h1 className="text-4xl font-bold tracking-tight mb-2 flex items-center gap-3">
+              {profile.name}
+              {stats.totalReviews > 2 && (
+                <span title="Perfil verificado por la comunidad">
+                  <ShieldCheck className="h-6 w-6 text-green-500" />
+                </span>
+              )}
+            </h1>
 
-                        // Obtenemos el número real de reseñas ya que las tenemos en la consulta
-                        const reviewCount = profile.reviews?.length || 0;
+            <div className="flex flex-wrap items-center gap-4 text-muted-foreground mb-6">
+              <span className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" /> {profile.city}
+              </span>
+              {profile.service_type && (
+                <span className="capitalize">
+                  • {profile.service_type.replace("_", " ")}
+                </span>
+              )}
+            </div>
 
-                        return (
-                            <ProfileCard
-                                key={profile.id}
-                                id={profile.id}
-                                name={profile.name}
-                                city={profile.city}
-                                category={profile.category}
-                                priceRange={profile.price_range}
-                                serviceType={profile.service_type}
-                                platformUrl={profile.platform_url}
-                                tags={profile.tags}
-                                imageUrl={coverImage} // <--- Pasamos la imagen calculada
-                                rating={5.0} // (Esto se puede calcular también luego)
-                                reviewCount={reviewCount}
-                            />
-                        )
-                    })}
-                </div>
+            <ShareBBCode
+              name={profile.name}
+              city={profile.city}
+              category={profile.category || ""}
+              tags={profile.tags || []}
+              rating={stats.overallAverage}
+              profileUrl={profileUrl}
+            />
+          </div>
+
+          {/* Feed */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b pb-4">
+              <h2 className="text-2xl font-semibold">Actividad de la comunidad</h2>
+              <span className="text-muted-foreground">{stats.totalReviews} aportaciones</span>
+            </div>
+
+            {reviews.length === 0 ? (
+              <p className="text-muted-foreground py-8 text-center bg-secondary/20 rounded-xl border border-dashed">
+                Aún no hay reseñas ni preguntas para este perfil.
+              </p>
             ) : (
-                <div className="text-center py-20 bg-secondary/30 rounded-xl border border-border border-dashed">
-                    <p className="text-lg font-medium text-foreground">No hay resultados para esta búsqueda</p>
-                    <p className="text-muted-foreground mt-1">
-                        Intenta cambiar los filtros o el término de búsqueda.
-                    </p>
-                </div>
+              reviews.map((review) =>
+                review.type === "question" ? (
+                  <QuestionCard key={review.id} review={review} />
+                ) : (
+                  <ReviewCard key={review.id} review={review} />
+                )
+              )
             )}
+          </div>
         </div>
-    )
+
+        {/* Columna lateral */}
+        <div>
+          <StatsPanel profile={profile} stats={stats} />
+        </div>
+      </div>
+    </div>
+  )
 }

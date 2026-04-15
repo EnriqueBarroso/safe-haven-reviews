@@ -1,146 +1,191 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Camera, User, ShieldCheck } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { StatsPanel } from "@/components/profile/StatsPanel"
+import { ReviewCard } from "@/components/profile/ReviewCard"
+import { QuestionCard } from "@/components/profile/QuestionCard"
+import { ShareBBCode } from "@/components/profile/share-bbcode"
+import { ArrowLeft, Loader2, MapPin, ShieldCheck } from "lucide-react"
 
-export default function ProfilePage() {
-  const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(false)
-  const [username, setUsername] = useState("")
-  const [pseudonym, setPseudonym] = useState("")
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+interface Stats {
+  totalReviews: number
+  overallAverage: number
+  veracityAvg: number
+  punctualityAvg: number
+  communicationAvg: number
+  hygieneAvg: number
+}
+
+const EMPTY_STATS: Stats = {
+  totalReviews: 0,
+  overallAverage: 0,
+  veracityAvg: 0,
+  punctualityAvg: 0,
+  communicationAvg: 0,
+  hygieneAvg: 0,
+}
+
+function calcStats(reviews: any[]): Stats {
+  const actual = reviews.filter((r) => r.type !== "question")
+  const total = actual.length
+
+  if (total === 0) return { ...EMPTY_STATS, totalReviews: reviews.length }
+
+  const sum = (key: string) => actual.reduce((acc, r) => acc + (r[key] || 0), 0)
+
+  return {
+    totalReviews: reviews.length,
+    overallAverage: Number((sum("overall") / total).toFixed(1)),
+    veracityAvg: Number((sum("veracity") / total).toFixed(1)),
+    punctualityAvg: Number((sum("punctuality") / total).toFixed(1)),
+    communicationAvg: Number((sum("communication") / total).toFixed(1)),
+    hygieneAvg: Number((sum("hygiene") / total).toFixed(1)),
+  }
+}
+
+export default function ProfileDetailPage() {
+  const params = useParams()
+  const profileId = params.id as string
+
+  const [profile, setProfile] = useState<any>(null)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [stats, setStats] = useState<Stats>(EMPTY_STATS)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const profileUrl = typeof window !== "undefined" ? window.location.href : ""
 
   useEffect(() => {
-    getProfile()
-  }, [])
+    if (!profileId) return
 
-  async function getProfile() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+    async function fetchData() {
+      const { data: profileData, error } = await supabase
+        .from("profiles").select("*").eq("id", profileId).single()
 
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('username, pseudonym, avatar_url')
-        .eq('id', user.id)
-        .single()
+      if (error) { setIsLoading(false); return }
+      setProfile(profileData)
 
-      if (data) {
-        setUsername(data.username || "")
-        setPseudonym(data.pseudonym || "")
-        setAvatarUrl(data.avatar_url)
-      }
-    } catch (error) {
-      console.error('Error cargando perfil:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+      const { data: reviewsData } = await supabase
+        .from("reviews")
+        .select("*")
+        .eq("profile_id", profileId)
+        .order("created_at", { ascending: false })
 
-  async function updateProfile(e: React.FormEvent) {
-    e.preventDefault()
-    setUpdating(true)
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("No hay usuario")
-
-      const updates = {
-        id: user.id,
-        username,
-        pseudonym,
-        avatar_url: avatarUrl,
-        updated_at: new Date().toISOString(),
+      if (reviewsData) {
+        setReviews(reviewsData)
+        setStats(calcStats(reviewsData))
       }
 
-      const { error } = await supabase.from('user_profiles').upsert(updates)
-      if (error) throw error
-      alert("¡Perfil actualizado con éxito!")
-    } catch (error: any) {
-      alert(error.message)
-    } finally {
-      setUpdating(false)
+      setIsLoading(false)
     }
+
+    fetchData()
+  }, [profileId])
+
+  // ── Guards ─────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    )
   }
 
-  async function uploadAvatar(event: React.ChangeEvent<HTMLInputElement>) {
-    try {
-      setUpdating(true)
-      if (!event.target.files || event.target.files.length === 0) throw new Error('Selecciona una imagen')
-
-      const file = event.target.files[0]
-      const { data: { user } } = await supabase.auth.getUser()
-      const fileExt = file.name.split('.').pop()
-      const filePath = `${user?.id}-${Math.random()}.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
-      setAvatarUrl(publicUrl)
-    } catch (error: any) {
-      alert(error.message)
-    } finally {
-      setUpdating(false)
-    }
+  if (!profile) {
+    return (
+      <div className="container mx-auto py-20 text-center">
+        <h1 className="text-2xl font-bold mb-4">Perfil no encontrado</h1>
+        <p className="text-muted-foreground mb-8">
+          El perfil que buscas no existe o ha sido eliminado.
+        </p>
+        <Button asChild><Link href="/profiles">Volver a Explorar</Link></Button>
+      </div>
+    )
   }
 
-  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>
-
+  // ── Render ─────────────────────────────────────────────
   return (
-    <div className="container max-w-2xl py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <User className="h-6 w-6 text-primary" /> Mi Perfil
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={updateProfile} className="space-y-6">
-            {/* Gestión del Avatar */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative h-24 w-24 overflow-hidden rounded-full bg-secondary">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-                ) : (
-                  <User className="h-full w-full p-4 text-muted-foreground" />
-                )}
-                <label className="absolute bottom-0 right-0 p-1 bg-primary text-white rounded-full cursor-pointer hover:bg-primary/90">
-                  <Camera className="h-4 w-4" />
-                  <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} disabled={updating} />
-                </label>
-              </div>
-              <p className="text-xs text-muted-foreground">Sube una foto o un avatar representativo</p>
+    <div className="container mx-auto py-10 px-4 max-w-5xl">
+      <Button variant="ghost" asChild className="mb-6 gap-2 -ml-3">
+        <Link href="/profiles"><ArrowLeft className="h-4 w-4" /> Volver a Explorar</Link>
+      </Button>
+
+      <div className="grid gap-8 md:grid-cols-[1fr_350px]">
+        {/* Columna principal */}
+        <div className="space-y-8">
+
+          {/* Cabecera del perfil */}
+          <div className="bg-card p-6 md:p-8 rounded-3xl border shadow-sm">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {profile.category && (
+                <Badge variant="outline" className="capitalize">{profile.category}</Badge>
+              )}
+              {profile.price_range && (
+                <Badge className="bg-primary text-primary-foreground">{profile.price_range}€</Badge>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="username">Nombre de Usuario (Privado)</Label>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Tu nombre real" />
+            <h1 className="text-4xl font-bold tracking-tight mb-2 flex items-center gap-3">
+              {profile.name}
+              {stats.totalReviews > 2 && (
+                // DESPUÉS
+                <span title="Perfil verificado por la comunidad">
+                  <ShieldCheck className="h-6 w-6 text-green-500" />
+                </span>
+              )}
+            </h1>
+
+            <div className="flex flex-wrap items-center gap-4 text-muted-foreground mb-6">
+              <span className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" /> {profile.city}
+              </span>
+              {profile.service_type && (
+                <span className="capitalize">• {profile.service_type.replace("_", " ")}</span>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="pseudonym">Seudónimo (Público)</Label>
-              <Input id="pseudonym" value={pseudonym} onChange={(e) => setPseudonym(e.target.value)} placeholder="Ej: ViajeroSeguro88" />
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <ShieldCheck className="h-3 w-3 text-primary" />
-                Este nombre es el que verán los demás en tus reseñas.
+            <ShareBBCode
+              name={profile.name}
+              city={profile.city}
+              category={profile.category || ""}
+              tags={profile.tags || []}
+              rating={stats.overallAverage}
+              profileUrl={profileUrl}
+            />
+          </div>
+
+          {/* Feed de reseñas y preguntas */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b pb-4">
+              <h2 className="text-2xl font-semibold">Actividad de la comunidad</h2>
+              <span className="text-muted-foreground">{stats.totalReviews} aportaciones</span>
+            </div>
+
+            {reviews.length === 0 ? (
+              <p className="text-muted-foreground py-8 text-center bg-secondary/20 rounded-xl border border-dashed">
+                Aún no hay reseñas ni preguntas para este perfil.
               </p>
-            </div>
+            ) : (
+              reviews.map((review) =>
+                review.type === "question" ? (
+                  <QuestionCard key={review.id} review={review} />
+                ) : (
+                  <ReviewCard key={review.id} review={review} />
+                )
+              )
+            )}
+          </div>
+        </div>
 
-            <Button type="submit" className="w-full" disabled={updating}>
-              {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Guardar Cambios"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Columna lateral */}
+        <div>
+          <StatsPanel profile={profile} stats={stats} />
+        </div>
+      </div>
     </div>
   )
 }

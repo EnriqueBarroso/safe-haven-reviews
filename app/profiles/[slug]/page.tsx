@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { StarIcon, MapPin, Calendar, ArrowLeft, X, Loader2, ShieldCheck, MessageCircle, Download, Link as LinkIcon, CheckCircle2 } from "lucide-react"
-import { ReportDialog } from "@/components/review/report-dialog"
+import { ReportDialog } from "@/components/review/Reportdialog"
 import { ShareBBCode } from "@/components/profile/share-bbcode"
 import {
   Dialog,
@@ -46,7 +46,7 @@ export default function ProfileDetailPage() {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', profileId)
+        .eq('slug', params.slug)
         .single()
 
       if (profileError) {
@@ -61,7 +61,7 @@ export default function ProfileDetailPage() {
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select('*, review_images(*)')
-        .eq('profile_id', profileId)
+        .eq('profile_id', profileData.id)
         .order('created_at', { ascending: false })
 
       if (!reviewsError && reviewsData) {
@@ -90,8 +90,8 @@ export default function ProfileDetailPage() {
       setIsLoading(false)
     }
 
-    if (profileId) fetchProfileData()
-  }, [profileId])
+    if (params.slug) fetchProfileData()
+  }, [params.slug])
 
   // ── LÓGICA DE PORTADA DINÁMICA ──
   // Busca la foto oficial. Si no hay, busca la primera foto de las reseñas.

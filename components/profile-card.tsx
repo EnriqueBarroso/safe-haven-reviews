@@ -9,6 +9,7 @@ interface ProfileCardProps {
   id: string
   name: string
   city: string
+  slug: string
   rating: number
   reviewCount: number
   category?: string      
@@ -20,7 +21,7 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({ 
-  id, name, city, rating, reviewCount, category, priceRange, serviceType, platformUrl, tags, imageUrl 
+  id, name, city, slug, rating, reviewCount, category, priceRange, serviceType, platformUrl, tags, imageUrl 
 }: ProfileCardProps) {
   
   const formatServiceType = (type?: string) => {
@@ -34,7 +35,7 @@ export function ProfileCard({
   }
 
   return (
-    <Link href={`/profiles/${id}`} className="group block h-full">
+    <Link href={`/profiles/${slug}`} className="group block h-full">
       <Card className="overflow-hidden border-border/50 bg-card/50 transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 h-full flex flex-col">
         
         {/* CABECERA: Imagen/Avatar con Badges */}
