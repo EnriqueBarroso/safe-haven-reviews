@@ -12,32 +12,32 @@ interface Step2Props {
 const ratingCategories = [
   {
     key: "veracity" as const,
-    label: "Veracity / Photo Accuracy",
-    description: "How accurate were the photos and profile description?",
+    label: "Veracidad / Precisión de las Fotos",
+    description: "¿Eran precisas las fotos y la descripción del perfil?",
     icon: Camera,
   },
   {
     key: "punctuality" as const,
-    label: "Punctuality",
-    description: "Were they on time and respectful of the schedule?",
+    label: "Puntualidad",
+    description: "¿Llegó a tiempo y respetó el horario acordado?",
     icon: Clock,
   },
   {
     key: "communication" as const,
-    label: "Communication & Friendliness",
-    description: "How was the communication before and during?",
+    label: "Comunicación y Trato",
+    description: "¿Cómo fue la comunicación antes y durante el encuentro?",
     icon: MessageCircle,
   },
   {
     key: "hygiene" as const,
-    label: "Hygiene & Environment",
-    description: "Cleanliness and overall environment quality",
+    label: "Higiene y Entorno",
+    description: "Limpieza y calidad general del entorno",
     icon: Sparkles,
   },
   {
     key: "overall" as const,
-    label: "Overall Experience",
-    description: "Your overall satisfaction with the experience",
+    label: "Experiencia General",
+    description: "Tu satisfacción general con la experiencia",
     icon: Star,
   },
 ]
@@ -46,9 +46,9 @@ export function Step2Ratings({ formData, updateFormData }: Step2Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Structured Ratings</h2>
+        <h2 className="text-xl font-semibold">Valoraciones Detalladas</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Rate each aspect of your experience (1-5 stars)
+          Valora cada aspecto de tu experiencia (1-5 estrellas)
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export function Step2Ratings({ formData, updateFormData }: Step2Props) {
         formData.overall > 0 && (
           <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
             <div className="flex items-center justify-between">
-              <span className="font-medium">Average Rating</span>
+              <span className="font-medium">Puntuación Media</span>
               <div className="flex items-center gap-2">
                 <StarRating
                   rating={Math.round(

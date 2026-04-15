@@ -21,9 +21,9 @@ export function Step5Alias({ formData }: Step5Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Review Summary</h2>
+        <h2 className="text-xl font-semibold">Resumen de la Reseña</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Review your submission before publishing
+          Revisa tu aportación antes de publicarla
         </p>
       </div>
 
@@ -32,16 +32,16 @@ export function Step5Alias({ formData }: Step5Props) {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
           <Shield className="h-8 w-8 text-primary" />
         </div>
-        <p className="text-sm text-muted-foreground">Your review will be published as</p>
+        <p className="text-sm text-muted-foreground">Tu reseña se publicará como</p>
         <p className="mt-2 text-2xl font-bold text-primary">{formData.alias}</p>
         <p className="mt-2 text-xs text-muted-foreground">
-          This pseudonym protects your identity while maintaining review authenticity
+          Este pseudónimo protege tu identidad manteniendo la autenticidad de la reseña
         </p>
       </div>
 
       {/* Review Preview */}
       <div className="space-y-4">
-        <h3 className="font-medium">Review Preview</h3>
+        <h3 className="font-medium">Vista Previa de la Reseña</h3>
         
         <div className="rounded-lg border border-border bg-secondary/30 p-4">
           {/* Profile being reviewed */}
@@ -50,10 +50,10 @@ export function Step5Alias({ formData }: Step5Props) {
               <User className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <h4 className="font-semibold">{formData.name || "Profile Name"}</h4>
+              <h4 className="font-semibold">{formData.name || "Nombre del Perfil"}</h4>
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5" />
-                <span>{formData.city || "City"}</span>
+                <span>{formData.city || "Ciudad"}</span>
               </div>
             </div>
           </div>
@@ -61,31 +61,31 @@ export function Step5Alias({ formData }: Step5Props) {
           {/* Ratings summary */}
           <div className="grid grid-cols-2 gap-4 border-b border-border py-4 text-sm md:grid-cols-5">
             <div>
-              <p className="text-muted-foreground">Veracity</p>
+              <p className="text-muted-foreground">Veracidad</p>
               <div className="mt-1 flex items-center gap-1">
                 <StarRating rating={formData.veracity} size="sm" />
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground">Punctuality</p>
+              <p className="text-muted-foreground">Puntualidad</p>
               <div className="mt-1 flex items-center gap-1">
                 <StarRating rating={formData.punctuality} size="sm" />
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground">Communication</p>
+              <p className="text-muted-foreground">Comunicación</p>
               <div className="mt-1 flex items-center gap-1">
                 <StarRating rating={formData.communication} size="sm" />
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground">Hygiene</p>
+              <p className="text-muted-foreground">Higiene</p>
               <div className="mt-1 flex items-center gap-1">
                 <StarRating rating={formData.hygiene} size="sm" />
               </div>
             </div>
             <div>
-              <p className="text-muted-foreground">Overall</p>
+              <p className="text-muted-foreground">General</p>
               <div className="mt-1 flex items-center gap-1">
                 <StarRating rating={formData.overall} size="sm" />
               </div>
@@ -95,22 +95,22 @@ export function Step5Alias({ formData }: Step5Props) {
           {/* Details */}
           <div className="space-y-3 border-b border-border py-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Average Rating</span>
+              <span className="text-muted-foreground">Puntuación Media</span>
               <div className="flex items-center gap-2">
                 <StarRating rating={Math.round(Number(averageRating))} size="sm" />
                 <span className="font-semibold text-primary">{averageRating}</span>
               </div>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Price Paid</span>
+              <span className="text-muted-foreground">Precio Pagado</span>
               <span className="font-medium">{formData.price} EUR</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Duration</span>
-              <span className="font-medium">{formData.duration} minutes</span>
+              <span className="text-muted-foreground">Duración</span>
+              <span className="font-medium">{formData.duration} minutos</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Value Rating</span>
+              <span className="text-muted-foreground">Valoración Calidad/Precio</span>
               <span className="font-medium">{formData.valuePrice}%</span>
             </div>
           </div>
@@ -118,7 +118,7 @@ export function Step5Alias({ formData }: Step5Props) {
           {/* Written review */}
           <div className="pt-4">
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {formData.details || "Your written review will appear here..."}
+              {formData.details || "Tu reseña escrita aparecerá aquí..."}
             </p>
           </div>
         </div>
@@ -130,9 +130,9 @@ export function Step5Alias({ formData }: Step5Props) {
           <Check className="h-4 w-4 text-primary-foreground" />
         </div>
         <div className="text-sm">
-          <p className="font-medium">Ready to publish</p>
+          <p className="font-medium">Listo para publicar</p>
           <p className="text-muted-foreground">
-            Click &quot;Publish Review&quot; to submit your review to the community
+            Haz clic en "Publicar Reseña" para enviar tu valoración a la comunidad
           </p>
         </div>
       </div>

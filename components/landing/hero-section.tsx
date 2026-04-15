@@ -1,77 +1,60 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, Shield, Lock, Eye } from "lucide-react"
+import { Search, Lock, PlusSquare } from "lucide-react"
 
 export function HeroSection() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const router = useRouter()
+  const [session, setSession] = useState<any>(null)
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
-    }
-  }
+  useEffect(() => {
+    // Obtenemos la sesión inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    // Escuchamos cambios reales (login/logout) para que el botón reaccione al instante
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   return (
-    <section className="relative overflow-hidden border-b border-border/40 bg-background py-24 md:py-32">
-      {/* Background pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(64,180,166,0.08),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(64,180,166,0.05),transparent_50%)]" />
+    <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden">
+      {/* Fondo decorativo */}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background"></div>
       
-      <div className="container relative mx-auto px-4">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm text-primary">
-            <Shield className="h-4 w-4" />
-            <span>Privacy-First Community Platform</span>
-          </div>
+      <div className="container mx-auto px-4 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+          <Lock className="h-4 w-4" /> Comunidad 100% Anónima
+        </div>
+        
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 max-w-4xl mx-auto leading-tight">
+          La base de datos de confianza para <span className="text-primary">tus consultas</span>
+        </h1>
+        
+        <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+          Comparte experiencias, pregunta a otros usuarios y verifica perfiles antes de tu próximo encuentro.
+        </p>
+        
+        {/* BOTONES PRINCIPALES: Siempre visibles para fomentar la participación */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
+          <Button size="lg" asChild className="w-full sm:w-auto h-14 px-8 text-lg shadow-xl shadow-primary/20">
+            <Link href="/profiles">
+              <Search className="mr-2 h-5 w-5" /> Explorar Reseñas
+            </Link>
+          </Button>
           
-          <h1 className="text-balance text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-            Trusted Reviews,{" "}
-            <span className="text-primary">Complete Privacy</span>
-          </h1>
-          
-          <p className="mt-6 text-pretty text-lg text-muted-foreground md:text-xl">
-            A secure, community-driven platform for verified reviews. Browse anonymously, contribute safely, and make informed decisions with honest experiences from real users.
-          </p>
-
-          <form onSubmit={handleSearch} className="mx-auto mt-10 max-w-xl">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search by Name, City, or Service Type..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-14 rounded-xl border-border/60 bg-secondary/50 pl-12 pr-32 text-base placeholder:text-muted-foreground/60 focus-visible:ring-primary"
-              />
-              <Button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-              >
-                Search
-              </Button>
-            </div>
-          </form>
-
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-primary" />
-              <span>Anonymous Browsing</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
-              <span>Verified Reviews</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-primary" />
-              <span>Privacy Protected</span>
-            </div>
-          </div>
+          <Button size="lg" variant="outline" asChild className="w-full sm:w-auto h-14 px-8 text-lg bg-background/50 backdrop-blur border-primary/50 hover:bg-primary/10 transition-all">
+            <Link href="/submit-review">
+              <PlusSquare className="mr-2 h-5 w-5 text-primary" /> 
+              {session ? "Publicar Experiencia" : "Unirse y Publicar"}
+            </Link>
+          </Button>
         </div>
       </div>
     </section>

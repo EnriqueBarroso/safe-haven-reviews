@@ -14,9 +14,9 @@ export function Step1ProfileInfo({ formData, updateFormData }: Step1Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Profile Information</h2>
+        <h2 className="text-xl font-semibold">Información del Perfil</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Enter the basic details about the profile you are reviewing
+          Introduce los detalles básicos del perfil que estás reseñando
         </p>
       </div>
 
@@ -24,28 +24,28 @@ export function Step1ProfileInfo({ formData, updateFormData }: Step1Props) {
         <div className="space-y-2">
           <Label htmlFor="name" className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
-            Name or Pseudonym <span className="text-destructive">*</span>
+            Nombre o Pseudónimo <span className="text-destructive">*</span>
           </Label>
           <Input
             id="name"
-            placeholder="e.g., Luna"
+            placeholder="ej., Luna"
             value={formData.name}
             onChange={(e) => updateFormData({ name: e.target.value })}
             className="bg-secondary/50"
           />
           <p className="text-xs text-muted-foreground">
-            Enter the name or pseudonym as displayed on their profile
+            Introduce el nombre o pseudónimo tal y como aparece en su perfil
           </p>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="city" className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
-            City / Location <span className="text-destructive">*</span>
+            Ciudad / Ubicación <span className="text-destructive">*</span>
           </Label>
           <Input
             id="city"
-            placeholder="e.g., Barcelona"
+            placeholder="ej., Barcelona"
             value={formData.city}
             onChange={(e) => updateFormData({ city: e.target.value })}
             className="bg-secondary/50"
@@ -55,29 +55,29 @@ export function Step1ProfileInfo({ formData, updateFormData }: Step1Props) {
         <div className="space-y-2">
           <Label htmlFor="platform" className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-muted-foreground" />
-            Platform / Site (Optional)
+            Plataforma / Sitio web (Opcional)
           </Label>
           <Input
             id="platform"
-            placeholder="e.g., Website name where found"
+            placeholder="ej., Nombre de la web donde lo encontraste"
             value={formData.platform}
             onChange={(e) => updateFormData({ platform: e.target.value })}
             className="bg-secondary/50"
           />
           <p className="text-xs text-muted-foreground">
-            Where did you find this profile? This helps verify authenticity.
+            ¿Dónde encontraste este perfil? Esto ayuda a verificar la autenticidad.
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label className="flex items-center gap-2">Profile Photo (Optional)</Label>
+          <Label className="flex items-center gap-2">Foto de Perfil (Opcional)</Label>
           <div className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border bg-secondary/30 transition-colors hover:border-primary/50 hover:bg-secondary/50">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Drag and drop or click to upload
+                Arrastra y suelta o haz clic para subir
               </p>
               <p className="mt-1 text-xs text-muted-foreground/60">
-                PNG, JPG up to 5MB
+                PNG, JPG hasta 5MB
               </p>
             </div>
           </div>

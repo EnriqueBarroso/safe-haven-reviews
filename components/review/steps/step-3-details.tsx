@@ -13,18 +13,18 @@ interface Step3Props {
 
 export function Step3Details({ formData, updateFormData }: Step3Props) {
   const getValueLabel = (value: number) => {
-    if (value < 25) return "Poor value"
-    if (value < 50) return "Below average"
-    if (value < 75) return "Good value"
-    return "Excellent value"
+    if (value < 25) return "Poco valor"
+    if (value < 50) return "Por debajo de la media"
+    if (value < 75) return "Buena relación"
+    return "Excelente relación"
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Details & Pricing</h2>
+        <h2 className="text-xl font-semibold">Detalles y Precio</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Help others understand the value and context of your experience
+          Ayuda a otros a entender el valor y el contexto de tu experiencia
         </p>
       </div>
 
@@ -36,9 +36,9 @@ export function Step3Details({ formData, updateFormData }: Step3Props) {
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-medium">Value for Price</h3>
+              <h3 className="font-medium">Relación Calidad/Precio</h3>
               <p className="text-sm text-muted-foreground">
-                How would you rate the overall value relative to the price?
+                ¿Cómo valorarías la relación general entre lo recibido y el precio pagado?
               </p>
             </div>
           </div>
@@ -52,11 +52,11 @@ export function Step3Details({ formData, updateFormData }: Step3Props) {
               className="w-full"
             />
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Poor</span>
+              <span className="text-muted-foreground">Pobre</span>
               <span className="font-medium text-primary">
                 {getValueLabel(formData.valuePrice)} ({formData.valuePrice}%)
               </span>
-              <span className="text-muted-foreground">Excellent</span>
+              <span className="text-muted-foreground">Excelente</span>
             </div>
           </div>
         </div>
@@ -65,7 +65,7 @@ export function Step3Details({ formData, updateFormData }: Step3Props) {
         <div className="space-y-2">
           <Label htmlFor="price" className="flex items-center gap-2">
             <Euro className="h-4 w-4 text-muted-foreground" />
-            Price Paid <span className="text-destructive">*</span>
+            Precio Pagado <span className="text-destructive">*</span>
           </Label>
           <div className="relative">
             <Input
@@ -81,7 +81,7 @@ export function Step3Details({ formData, updateFormData }: Step3Props) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Enter the total amount paid for the service
+            Introduce la cantidad total pagada por el servicio
           </p>
         </div>
 
@@ -89,7 +89,7 @@ export function Step3Details({ formData, updateFormData }: Step3Props) {
         <div className="space-y-2">
           <Label htmlFor="duration" className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            Duration <span className="text-destructive">*</span>
+            Duración <span className="text-destructive">*</span>
           </Label>
           <div className="relative">
             <Input
@@ -105,7 +105,7 @@ export function Step3Details({ formData, updateFormData }: Step3Props) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            How long did the encounter last?
+            ¿Cuánto tiempo duró el encuentro?
           </p>
         </div>
 
@@ -113,9 +113,9 @@ export function Step3Details({ formData, updateFormData }: Step3Props) {
         {formData.price && formData.duration && (
           <div className="rounded-lg border border-border bg-muted/50 p-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Calculated rate per hour</span>
+              <span className="text-muted-foreground">Tarifa por hora calculada</span>
               <span className="font-semibold">
-                {((Number(formData.price) / Number(formData.duration)) * 60).toFixed(0)} EUR/hr
+                {((Number(formData.price) / Number(formData.duration)) * 60).toFixed(0)} EUR/h
               </span>
             </div>
           </div>
