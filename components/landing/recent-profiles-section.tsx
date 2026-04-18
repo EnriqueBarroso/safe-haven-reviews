@@ -75,6 +75,7 @@ export function RecentProfilesSection() {
                 id={profile.id}
                 name={profile.name}
                 city={profile.city}
+                slug={profile.slug} 
                 category={profile.category}
                 priceRange={profile.price_range}
                 serviceType={profile.service_type}
