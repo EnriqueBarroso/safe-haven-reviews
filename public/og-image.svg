@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur1"/>
+      <feGaussianBlur stdDeviation="16" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0f"/>
+      <stop offset="50%" stop-color="#0f0f1a"/>
+      <stop offset="100%" stop-color="#0a0a0f"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00ff87" stop-opacity="0"/>
+      <stop offset="15%" stop-color="#00ff87"/>
+      <stop offset="85%" stop-color="#ff00e5"/>
+      <stop offset="100%" stop-color="#ff00e5" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glowGreen" cx="35%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="#00ff87" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#00ff87" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowPink" cx="65%" cy="55%" r="40%">
+      <stop offset="0%" stop-color="#ff00e5" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ff00e5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <rect width="1200" height="630" fill="url(#glowGreen)"/>
+  <rect width="1200" height="630" fill="url(#glowPink)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.04" stroke="#ffffff" stroke-width="0.5">
+    <line x1="0" y1="0" x2="0" y2="630"/><line x1="60" y1="0" x2="60" y2="630"/>
+    <line x1="120" y1="0" x2="120" y2="630"/><line x1="180" y1="0" x2="180" y2="630"/>
+    <line x1="240" y1="0" x2="240" y2="630"/><line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="360" y1="0" x2="360" y2="630"/><line x1="420" y1="0" x2="420" y2="630"/>
+    <line x1="480" y1="0" x2="480" y2="630"/><line x1="540" y1="0" x2="540" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/><line x1="660" y1="0" x2="660" y2="630"/>
+    <line x1="720" y1="0" x2="720" y2="630"/><line x1="780" y1="0" x2="780" y2="630"/>
+    <line x1="840" y1="0" x2="840" y2="630"/><line x1="900" y1="0" x2="900" y2="630"/>
+    <line x1="960" y1="0" x2="960" y2="630"/><line x1="1020" y1="0" x2="1020" y2="630"/>
+    <line x1="1080" y1="0" x2="1080" y2="630"/><line x1="1140" y1="0" x2="1140" y2="630"/>
+    <line x1="0" y1="60" x2="1200" y2="60"/><line x1="0" y1="120" x2="1200" y2="120"/>
+    <line x1="0" y1="180" x2="1200" y2="180"/><line x1="0" y1="240" x2="1200" y2="240"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/><line x1="0" y1="360" x2="1200" y2="360"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/><line x1="0" y1="480" x2="1200" y2="480"/>
+    <line x1="0" y1="540" x2="1200" y2="540"/>
+  </g>
+
+  <!-- Top accent line -->
+  <rect x="100" y="160" width="1000" height="2" rx="1" fill="url(#accentLine)" opacity="0.3"/>
+
+  <!-- Main Logo -->
+  <text x="355" y="310" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="130" letter-spacing="-3" fill="#00ff87" filter="url(#neonGlow)">Ya</text>
+  <text x="600" y="310" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="130" letter-spacing="-3" fill="#ff00e5" filter="url(#neonGlow)">Fui</text>
+
+  <!-- Accent dot between -->
+  <circle cx="588" cy="296" r="6" fill="#60efff" filter="url(#softGlow)"/>
+
+  <!-- Tagline -->
+  <text x="600" y="380" font-family="Arial, sans-serif" font-weight="400" font-size="28" letter-spacing="12" fill="#666666" text-anchor="middle">RESEÑAS DE LA COMUNIDAD</text>
+
+  <!-- Bottom accent line -->
+  <rect x="100" y="420" width="1000" height="2" rx="1" fill="url(#accentLine)" opacity="0.3"/>
+
+  <!-- Bottom CTA -->
+  <rect x="430" y="470" width="340" height="50" rx="25" fill="none" stroke="#00ff87" stroke-width="1.5" opacity="0.5" filter="url(#softGlow)"/>
+  <text x="600" y="502" font-family="Arial, sans-serif" font-weight="600" font-size="18" letter-spacing="4" fill="#00ff87" text-anchor="middle" opacity="0.9">ÚNETE AL FORO</text>
+
+  <!-- Corner accents -->
+  <path d="M30,30 L30,60 M30,30 L60,30" stroke="#00ff87" stroke-width="2" opacity="0.3"/>
+  <path d="M1170,30 L1170,60 M1170,30 L1140,30" stroke="#ff00e5" stroke-width="2" opacity="0.3"/>
+  <path d="M30,600 L30,570 M30,600 L60,600" stroke="#ff00e5" stroke-width="2" opacity="0.3"/>
+  <path d="M1170,600 L1170,570 M1170,600 L1140,600" stroke="#00ff87" stroke-width="2" opacity="0.3"/>
+
+  <!-- Domain -->
+  <text x="600" y="570" font-family="Arial, sans-serif" font-weight="300" font-size="16" letter-spacing="2" fill="#444444" text-anchor="middle">yafui.es</text>
+</svg>

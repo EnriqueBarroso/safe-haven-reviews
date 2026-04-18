@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 50" width="160" height="50">
+  <defs>
+    <filter id="glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="line" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00ff87"/>
+      <stop offset="100%" stop-color="#ff00e5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- "Ya" green -->
+  <text x="8" y="38" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="38" letter-spacing="-1" fill="#00ff87" filter="url(#glow)">Ya</text>
+
+  <!-- "Fui" pink -->
+  <text x="76" y="38" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="38" letter-spacing="-1" fill="#ff00e5" filter="url(#glow)">Fui</text>
+
+  <!-- Bottom line -->
+  <rect x="8" y="44" width="142" height="1.5" rx="1" fill="url(#line)" opacity="0.5"/>
+</svg>
