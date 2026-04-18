@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ShieldAlert, Trash2, CheckCircle, Loader2, ArrowLeft, ShieldCheck } from "lucide-react"
 
 // SUSTITUYE ESTO POR TU CORREO REAL DE ADMINISTRADOR
+export const dynamic = "force-dynamic";
 const ADMIN_EMAIL = "enrique.barroso84@gmail.com"
 
 export default function AdminDashboard() {
