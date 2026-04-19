@@ -5,20 +5,17 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Shield, LogOut, User, ShieldAlert, Menu, X } from "lucide-react"
+import { LogOut, User, ShieldAlert, Menu, X } from "lucide-react"
 
-
-// SUSTITUYE POR TU CORREO REAL
 const ADMIN_EMAIL = "enrique.barroso84@gmail.com"
 
 export function Header() {
   const router = useRouter()
   const [session, setSession] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) // <-- ESTADO PARA EL MÓVIL
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    // DESPUÉS
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setIsLoading(false)
@@ -28,8 +25,6 @@ export function Header() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      // Forzamos isLoading a false también aquí por si el evento
-      // llega antes que la promesa de getSession
       setIsLoading(false)
     })
 
@@ -38,7 +33,7 @@ export function Header() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    setIsMobileMenuOpen(false) // Cerramos menú al salir
+    setIsMobileMenuOpen(false)
     router.push("/")
     router.refresh()
   }
@@ -50,21 +45,19 @@ export function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
 
         {/* LOGO */}
-        <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/20">
-            <Shield className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold tracking-tight">ReviewSphere</span>
+        <Link href="/" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+          <img src="/yafui-logo-compact.svg" alt="YaFui" className="h-8 w-auto md:hidden" />
+          <img src="/yafui-logo.svg" alt="YaFui" className="h-8 w-auto hidden md:block" />
         </Link>
 
-        {/* NAVEGACIÓN DESKTOP (Se oculta en móvil) */}
+        {/* NAVEGACIÓN DESKTOP */}
         <nav className="hidden items-center gap-6 md:flex">
           <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary">Inicio</Link>
           <Link href="/profiles" className="text-sm font-medium text-muted-foreground hover:text-primary">Explorar</Link>
           <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary">Cómo Funciona</Link>
         </nav>
 
-        {/* BOTONES DESKTOP (Se ocultan en móvil) */}
+        {/* BOTONES DESKTOP */}
         <div className="hidden md:flex items-center gap-3">
           {!isLoading && (
             <>
