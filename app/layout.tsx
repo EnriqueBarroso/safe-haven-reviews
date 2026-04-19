@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'ReviewSphere - Private Community Reviews',
-  description: 'A trusted, private community platform for verified reviews. Anonymous browsing, verified experiences.',
+  title: 'YaFui - Reseñas sinceras de la comunidad',
+  description: "Foro de reseñas y preguntas. Ya fui, ya lo viví, y te lo cuento.",
   generator: 'v0.app',
   icons: {
     icon: [
