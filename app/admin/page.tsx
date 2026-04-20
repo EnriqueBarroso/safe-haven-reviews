@@ -4,10 +4,19 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ShieldAlert, Trash2, CheckCircle, Loader2, ArrowLeft, ShieldCheck } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  ShieldAlert, 
+  Trash2, 
+  CheckCircle, 
+  Loader2, 
+  ArrowLeft, 
+  ShieldCheck, 
+  MessageSquare, 
+  AlertCircle 
+} from "lucide-react"
 
-// SUSTITUYE ESTO POR TU CORREO REAL DE ADMINISTRADOR
 export const dynamic = "force-dynamic";
 const ADMIN_EMAIL = "enrique.barroso84@gmail.com"
 
@@ -15,6 +24,7 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [reports, setReports] = useState<any[]>([])
+  const [questions, setQuestions] = useState<any[]>([])
 
   useEffect(() => {
     checkAdminAndFetchData()
@@ -26,173 +36,150 @@ export default function AdminDashboard() {
 
     if (session?.user?.email === ADMIN_EMAIL) {
       setIsAdmin(true)
-      fetchPendingReports()
-    } else {
-      setIsAdmin(false)
-      setIsLoading(false)
-    }
-  }
-
-  const fetchPendingReports = async () => {
-    // Traemos los reportes que estén pendientes, y cruzamos los datos 
-    // para ver el texto de la reseña reportada y el nombre del perfil
-    const { data, error } = await supabase
-      .from('reports')
-      .select(`
-        id,
-        reason,
-        details,
-        created_at,
-        reviews (
-          id,
-          details,
-          overall,
-          profiles ( name, id )
-        )
-      `)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-
-    if (!error && data) {
-      setReports(data)
+      await Promise.all([
+        fetchPendingReports(),
+        fetchRecentQuestions()
+      ])
     }
     setIsLoading(false)
   }
 
-  // ACCIÓN 1: La reseña es tóxica, la borramos.
-  const handleDeleteReview = async (reportId: string, reviewId: string) => {
-    if (!window.confirm("¿Estás seguro? Borrar esta reseña es irreversible.")) return
-
-    // Al borrar la reseña, el reporte se borrará automáticamente 
-    // (gracias al ON DELETE CASCADE de la base de datos)
-    const { error } = await supabase
-      .from('reviews')
-      .delete()
-      .eq('id', reviewId)
-
-    if (!error) {
-      // Actualizamos la pantalla quitando el reporte
-      setReports(reports.filter(r => r.id !== reportId))
-      alert("Reseña eliminada correctamente.")
-    } else {
-      alert("Error al borrar: " + error.message)
-    }
-  }
-
-  // ACCIÓN 2: El reporte es falso o exagerado, lo descartamos.
-  const handleDismissReport = async (reportId: string) => {
-    const { error } = await supabase
+  const fetchPendingReports = async () => {
+    const { data, error } = await supabase
       .from('reports')
-      .update({ status: 'dismissed' })
-      .eq('id', reportId)
+      .select(`
+        id, reason, details, created_at,
+        reviews ( id, details, overall, profiles ( name, id ) )
+      `)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
 
-    if (!error) {
-      setReports(reports.filter(r => r.id !== reportId))
-    }
+    if (!error && data) setReports(data)
   }
 
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>
+  const fetchRecentQuestions = async () => {
+    const { data, error } = await supabase
+      .from('questions')
+      .select(`
+        *,
+        profiles ( name, city )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (!error && data) setQuestions(data)
   }
 
-  // PANTALLA DE BLOQUEO PARA USUARIOS NORMALES
+  const handleDeleteReview = async (reportId: string, reviewId: string) => {
+    if (!window.confirm("¿Borrar esta reseña? Es irreversible.")) return
+    const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+    if (!error) setReports(reports.filter(r => r.id !== reportId))
+  }
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!window.confirm("¿Borrar esta entrada del foro? Se borrarán también todas sus respuestas.")) return
+    const { error } = await supabase.from('questions').delete().eq('id', questionId)
+    if (!error) setQuestions(questions.filter(q => q.id !== questionId))
+  }
+
+  const handleDismissReport = async (reportId: string) => {
+    const { error } = await supabase.from('reports').update({ status: 'dismissed' }).eq('id', reportId)
+    if (!error) setReports(reports.filter(r => r.id !== reportId))
+  }
+
+  if (isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col h-[80vh] items-center justify-center text-center px-4">
         <ShieldAlert className="h-20 w-20 text-destructive mb-6" />
         <h1 className="text-3xl font-bold mb-2">Acceso Restringido</h1>
-        <p className="text-muted-foreground mb-8">Esta zona es exclusiva para la administración de ReviewSphere.</p>
         <Button asChild><Link href="/">Volver al inicio</Link></Button>
       </div>
     )
   }
 
-  // PANTALLA DEL ADMINISTRADOR
   return (
     <div className="container mx-auto py-10 px-4 max-w-5xl">
-      <Button variant="ghost" asChild className="mb-6 gap-2 -ml-3">
+      {/* BOTÓN DE VOLVER ATRÁS */}
+      <Button variant="ghost" asChild className="mb-6 gap-2 -ml-3 text-muted-foreground hover:text-foreground">
         <Link href="/">
           <ArrowLeft className="h-4 w-4" /> Volver al portal
         </Link>
       </Button>
 
-      <div className="flex items-center gap-4 mb-10 pb-6 border-b">
+      <header className="flex items-center gap-4 mb-10 pb-6 border-b">
         <div className="h-14 w-14 rounded-xl bg-destructive/10 flex items-center justify-center border border-destructive/20 text-destructive">
           <ShieldCheck className="h-7 w-7" />
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Centro de Moderación</h1>
-          <p className="text-muted-foreground">Gestiona los reportes de la comunidad para mantener la plataforma limpia.</p>
+          <p className="text-muted-foreground">Administración global de reseñas y foro.</p>
         </div>
-      </div>
+      </header>
 
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          Reportes Pendientes 
-          <span className="bg-primary text-primary-foreground text-xs py-1 px-2 rounded-full">
-            {reports.length}
-          </span>
-        </h2>
+      <Tabs defaultValue="reports" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="reports" className="gap-2">
+            <AlertCircle className="h-4 w-4" /> Reportes ({reports.length})
+          </TabsTrigger>
+          <TabsTrigger value="forum" className="gap-2">
+            <MessageSquare className="h-4 w-4" /> Foro ({questions.length})
+          </TabsTrigger>
+        </TabsList>
 
-        {reports.length === 0 ? (
-          <div className="text-center py-20 bg-secondary/30 rounded-xl border border-dashed">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium">Todo está tranquilo</h3>
-            <p className="text-muted-foreground">No hay reportes pendientes de revisión. ¡Buen trabajo de la comunidad!</p>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {reports.map((report) => (
-              <Card key={report.id} className="border-destructive/20 shadow-sm overflow-hidden">
-                <div className="bg-destructive/5 px-6 py-3 border-b border-destructive/10 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <ShieldAlert className="h-4 w-4 text-destructive" />
-                    <span className="font-bold text-destructive capitalize">
-                      Motivo: {report.reason.replace('_', ' ')}
-                    </span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(report.created_at).toLocaleString()}
-                  </span>
+        <TabsContent value="reports" className="space-y-6">
+          {reports.length === 0 ? (
+            <div className="text-center py-20 bg-secondary/30 rounded-xl border border-dashed">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground">No hay reportes de reseñas pendientes.</p>
+            </div>
+          ) : (
+            reports.map((report) => (
+              <Card key={report.id} className="border-destructive/20 overflow-hidden">
+                <div className="bg-destructive/5 px-6 py-2 border-b text-xs font-bold text-destructive flex justify-between">
+                  <span>MOTIVO: {report.reason.toUpperCase()}</span>
+                  <span>{new Date(report.created_at).toLocaleDateString()}</span>
                 </div>
-                
-                <CardContent className="p-6 grid md:grid-cols-2 gap-6">
-                  {/* Detalles del reporte */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalles del Denunciante</p>
-                    <p className="text-sm bg-secondary/50 p-3 rounded-md italic">
-                      {report.details || "Sin detalles adicionales."}
-                    </p>
+                <CardContent className="p-6 space-y-4">
+                  <p className="text-sm italic bg-muted p-3 rounded">" {report.details} "</p>
+                  <div className="border-l-4 border-primary/20 pl-4">
+                    <p className="text-xs font-bold text-muted-foreground mb-1">RESEÑA REPORTADA:</p>
+                    <p className="text-sm">"{report.reviews?.details}"</p>
                   </div>
-
-                  {/* Reseña original que fue reportada */}
-                  <div className="space-y-2 border-l pl-6">
-                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Reseña Reportada (Perfil: <Link href={`/profiles/${report.reviews?.profiles?.id}`} className="text-primary hover:underline">{report.reviews?.profiles?.name}</Link>)
-                    </p>
-                    <div className="bg-background border p-3 rounded-md relative">
-                      <div className="absolute top-2 right-2 text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">
-                        Nota: {report.reviews?.overall}/5
-                      </div>
-                      <p className="text-sm mt-4">"{report.reviews?.details}"</p>
-                    </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleDismissReport(report.id)}>Ignorar</Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteReview(report.id, report.reviews.id)}>Borrar Reseña</Button>
                   </div>
                 </CardContent>
-
-                <div className="px-6 py-4 bg-secondary/20 border-t flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => handleDismissReport(report.id)}>
-                    Ignorar Reporte (Reseña OK)
-                  </Button>
-                  <Button variant="destructive" onClick={() => handleDeleteReview(report.id, report.reviews.id)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Eliminar Reseña Tóxica
-                  </Button>
-                </div>
               </Card>
-            ))}
-          </div>
-        )}
-      </div>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="forum" className="space-y-4">
+          {questions.map((q) => (
+            <Card key={q.id} className="hover:border-amber-200 transition-colors">
+              <CardContent className="p-4 flex items-start justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold px-2 py-0.5 bg-secondary rounded">{q.alias}</span>
+                    <span className="text-[10px] text-muted-foreground">{new Date(q.created_at).toLocaleString()}</span>
+                    {q.parent_id && <span className="text-[10px] bg-blue-100 text-blue-700 px-1 rounded">Respuesta</span>}
+                  </div>
+                  <p className="text-sm line-clamp-2">{q.details}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Perfil: <span className="text-foreground font-medium">{q.profiles?.name}</span> ({q.profiles?.city})
+                  </p>
+                </div>
+                <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteQuestion(q.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -50,8 +50,32 @@ export function ReplyForm({
 
       if (table === "reviews") payload.type = "review"
 
+      // 1. Guardamos la respuesta
       const { error } = await supabase.from(table).insert(payload)
       if (error) throw error
+
+      // ------------------------------------------------------------------
+      // 2. LÓGICA DE NOTIFICACIONES (NUEVO)
+      // ------------------------------------------------------------------
+      
+      // Buscamos a quién le estamos respondiendo (el dueño del parentId)
+      const { data: parentData } = await supabase
+        .from(table)
+        .select('user_id')
+        .eq('id', parentId)
+        .single()
+
+      // Si el mensaje original existe y NO es nuestro propio mensaje, notificamos
+      if (parentData && parentData.user_id && parentData.user_id !== session.user.id) {
+        await supabase.from('notifications').insert({
+          user_id: parentData.user_id, // El dueño del post original
+          actor_id: session.user.id,   // El usuario actual (tú)
+          type: table === 'reviews' ? 'reply_review' : 'reply_forum',
+          target_id: parentId,
+          target_slug: profileId,      // Usamos el profileId para poder enlazar a la URL correcta luego
+        })
+      }
+      // ------------------------------------------------------------------
 
       onSuccess()
     } catch (err: any) {
