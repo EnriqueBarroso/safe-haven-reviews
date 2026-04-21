@@ -82,7 +82,7 @@ export function ReviewForm() {
   }
 
   const handleSaveDraft = () => {
-    console.log("Guardando borrador:", formData)
+    // borrador guardado
     // TODO: Implementar guardado de borrador (opcional para el futuro)
   }
 

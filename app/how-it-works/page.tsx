@@ -1,4 +1,10 @@
 import Link from "next/link"
+
+export const metadata = {
+  title: "Cómo Funciona — YaFui",
+  description: "Descubre cómo funciona YaFui: publica reseñas anónimas, pregunta en el foro y consulta experiencias verificadas.",
+}
+
 import { Button } from "@/components/ui/button"
 import { ShieldCheck, Search, MessageSquare, ExternalLink, UserCheck, AlertTriangle } from "lucide-react"
 
