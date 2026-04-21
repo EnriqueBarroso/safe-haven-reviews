@@ -54,29 +54,42 @@ export function ReplyForm({
       const { error } = await supabase.from(table).insert(payload)
       if (error) throw error
 
-      // ------------------------------------------------------------------
-      // 2. LÓGICA DE NOTIFICACIONES (NUEVO)
+     // ------------------------------------------------------------------
+      // 2. LÓGICA DE NOTIFICACIONES (CORREGIDA PARA URLS)
       // ------------------------------------------------------------------
       
-      // Buscamos a quién le estamos respondiendo (el dueño del parentId)
+      // 1. Buscamos de quién es el mensaje y a qué perfil pertenece
       const { data: parentData } = await supabase
         .from(table)
-        .select('user_id')
+        .select('user_id, profile_id')
         .eq('id', parentId)
         .single()
 
-      // Si el mensaje original existe y NO es nuestro propio mensaje, notificamos
       if (parentData && parentData.user_id && parentData.user_id !== session.user.id) {
+        
+        const finalProfileId = parentData.profile_id || profileId
+
+        // 2. TRADUCCIÓN: Buscamos el "slug" de texto real en la tabla perfiles
+        const { data: profileRecord } = await supabase
+          .from('profiles')
+          .select('slug')
+          .eq('id', finalProfileId)
+          .single()
+
+        // Usamos el slug de texto (ej: juan-perez-madrid)
+        const correctSlug = profileRecord?.slug || finalProfileId
+
+        // 3. Guardamos la notificación con la URL correcta
         await supabase.from('notifications').insert({
-          user_id: parentData.user_id, // El dueño del post original
-          actor_id: session.user.id,   // El usuario actual (tú)
+          user_id: parentData.user_id, 
+          actor_id: session.user.id,   
           type: table === 'reviews' ? 'reply_review' : 'reply_forum',
           target_id: parentId,
-          target_slug: profileId,      // Usamos el profileId para poder enlazar a la URL correcta luego
+          target_slug: correctSlug, // ¡Ahora sí guarda el texto correcto para la URL!
         })
       }
       // ------------------------------------------------------------------
-
+      
       onSuccess()
     } catch (err: any) {
       console.error("Error al responder:", err.message)
