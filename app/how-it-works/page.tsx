@@ -12,7 +12,7 @@ export default function HowItWorksPage() {
           Complicidad entre clientes
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          ReviewSphere no es una página de anuncios. Somos una comunidad anónima y segura donde los usuarios comparten experiencias reales para evitar sorpresas y estafas.
+          YaFui no es una página de anuncios. Somos una comunidad anónima y segura donde los usuarios comparten experiencias reales para evitar sorpresas y estafas.
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export default function HowItWorksPage() {
             </div>
             <div>
               <h4 className="font-bold text-lg">100% Anonimato Garantizado</h4>
-              <p className="text-muted-foreground">Nunca compartiremos tu correo electrónico ni tu IP. Usa tu pseudónimo generado para publicar. Lo que pasa en ReviewSphere, se queda en ReviewSphere.</p>
+              <p className="text-muted-foreground">Nunca compartiremos tu correo electrónico ni tu IP. Usa tu pseudónimo generado para publicar. Lo que pasa en YaFui, se queda en YaFui.</p>
             </div>
           </li>
           <li className="flex items-start gap-4">

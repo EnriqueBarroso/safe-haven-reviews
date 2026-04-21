@@ -151,7 +151,7 @@ export default function ProfilesPage() {
 
           {/* Cabecera Principal */}
           <div className="mb-8 text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">Comunidad ReviewSphere</h1>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">Comunidad YaFui</h1>
             <p className="text-muted-foreground">
               Explora perfiles, lee las últimas experiencias o únete a la conversación en el foro.
             </p>
