@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { AgeVerification } from '@/components/AgeVerification'
 
 export const dynamic = "force-dynamic"
 
@@ -32,6 +33,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="font-sans antialiased">
+        <AgeVerification />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
