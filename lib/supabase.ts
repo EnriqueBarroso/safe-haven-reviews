@@ -1,6 +1,3 @@
-import { createBrowserClient } from '@supabase/ssr'
-
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Proxy de compatibilidad — importa desde lib/supabase/client.ts
+// Nuevo código debe importar directamente desde @/lib/supabase/client o @/lib/supabase/server
+export { supabase } from './supabase/client'

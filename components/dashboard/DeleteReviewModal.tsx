@@ -14,7 +14,7 @@ import { Loader2, AlertTriangle } from "lucide-react"
 interface DeleteReviewModalProps {
   reviewId: string | null
   onClose: () => void
-  onConfirm: (id: string) => Promise<void>
+  onConfirm: () => void
   isDeleting: boolean
 }
 
@@ -44,7 +44,7 @@ export function DeleteReviewModal({
           </Button>
           <Button
             variant="destructive"
-            onClick={() => reviewId && onConfirm(reviewId)}
+            onClick={() => reviewId && onConfirm()}
             disabled={isDeleting}
           >
             {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
