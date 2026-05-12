@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, LayoutDashboard, Search } from "lucide-react"
 

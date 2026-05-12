@@ -1,9 +1,11 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ImageIcon, Plus, X } from "lucide-react"
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 export interface ImagePreview {
   file: File
@@ -26,18 +28,27 @@ export function ImageUploader({
   hint = `Hasta ${maxImages} imágenes — solo visibles en tu reseña`,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [sizeError, setSizeError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
 
+    const oversized = files.filter((f) => f.size > MAX_FILE_SIZE)
+    if (oversized.length > 0) {
+      setSizeError(`${oversized.length > 1 ? "Algunas imágenes superan" : "La imagen supera"} el límite de 5MB y no se han añadido.`)
+    } else {
+      setSizeError(null)
+    }
+
+    const valid = files.filter((f) => f.size <= MAX_FILE_SIZE)
     const remaining = maxImages - images.length
-    const toAdd = files.slice(0, remaining).map((file) => ({
+    const toAdd = valid.slice(0, remaining).map((file) => ({
       file,
       previewUrl: URL.createObjectURL(file),
     }))
 
-    onChange([...images, ...toAdd])
+    if (toAdd.length > 0) onChange([...images, ...toAdd])
     e.target.value = ""
   }
 
@@ -121,6 +132,10 @@ export function ImageUploader({
           <ImageIcon className="h-6 w-6" />
           <span className="text-sm">Añadir fotos de tu visita</span>
         </button>
+      )}
+
+      {sizeError && (
+        <p className="text-sm text-destructive mt-1">{sizeError}</p>
       )}
     </div>
   )

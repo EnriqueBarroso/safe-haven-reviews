@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -85,11 +85,15 @@ export default function SubmitReviewPage() {
 
   const handleProfileImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setProfileImageFile(file)
-      setProfileImagePreview(URL.createObjectURL(file))
-      setFormData((p) => ({ ...p, profileImageUrl: "" }))
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg("La imagen de perfil no puede superar 5MB.")
+      e.target.value = ""
+      return
     }
+    setProfileImageFile(file)
+    setProfileImagePreview(URL.createObjectURL(file))
+    setFormData((p) => ({ ...p, profileImageUrl: "" }))
   }
 
   const ratingsComplete =
@@ -247,7 +251,7 @@ export default function SubmitReviewPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Nombre / Alias</Label>
-                  <Input value={formData.name}
+                  <Input id="profile-name" value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     readOnly={isReadOnly}
                     className={isReadOnly ? "bg-muted cursor-not-allowed" : ""}
@@ -255,7 +259,7 @@ export default function SubmitReviewPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Ciudad</Label>
-                  <Input value={formData.city}
+                  <Input id="profile-city" value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     readOnly={isReadOnly}
                     className={isReadOnly ? "bg-muted cursor-not-allowed" : ""}
@@ -389,13 +393,13 @@ export default function SubmitReviewPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Precio pagado (€)</Label>
-                  <Input type="number" min="0" value={formData.price}
+                  <Input id="review-price" type="number" min="0" value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     required />
                 </div>
                 <div className="space-y-2">
                   <Label>Duración (minutos)</Label>
-                  <Input type="number" min="0" value={formData.duration}
+                  <Input id="review-duration" type="number" min="0" value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     required />
                 </div>

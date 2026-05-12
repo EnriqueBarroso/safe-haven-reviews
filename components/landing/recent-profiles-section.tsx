@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { ProfileCard } from "@/components/profile-card"
 import { Loader2, ArrowRight } from "lucide-react"

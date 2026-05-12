@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase/client"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -68,6 +68,12 @@ export default function QuestionFormPage() {
       if (imageTab === "url" && imageUrlInput.trim() !== "") {
         finalImageUrl = imageUrlInput.trim()
       } else if (imageTab === "upload" && imageFile) {
+        if (imageFile.size > 5 * 1024 * 1024) {
+          setError("La imagen no puede superar 5MB.")
+          setIsSubmitting(false)
+          return
+        }
+
         const fileExt = imageFile.name.split(".").pop()
         const fileName = `forum/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
@@ -153,7 +159,7 @@ export default function QuestionFormPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-secondary/10">
-      <Header />
+      <Header isAdmin={false} />
 
       <main className="flex-1 container mx-auto px-4 py-10 max-w-2xl">
         <Button variant="ghost" asChild className="mb-6 gap-2 -ml-3">

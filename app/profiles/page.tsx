@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { Header } from "@/components/header"
+import { HeaderServer } from "@/components/HeaderServer"
 import { Footer } from "@/components/footer"
 import { ProfilesPageClient } from "@/components/profiles/ProfilesPageClient"
 
@@ -116,7 +116,7 @@ export default async function ProfilesPage({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      <HeaderServer />
 
       <main className="flex-1">
         <div className="container mx-auto px-4 py-10 max-w-6xl">

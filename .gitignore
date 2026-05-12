@@ -17,3 +17,8 @@ node_modules
 
 # Claude Code local settings
 .claude/
+
+# Playwright
+/playwright-report/
+/test-results/
+.env.test

@@ -1,4 +1,4 @@
-import { Header } from "@/components/header"
+import { HeaderServer } from "@/components/HeaderServer"
 
 export const metadata = {
   title: "YaFui — Reseñas sinceras de la comunidad",
@@ -14,7 +14,7 @@ import { CtaSection } from "@/components/landing/cta-section"
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      <HeaderServer />
       <main className="flex-1">
         <HeroSection />
         <HowItWorksSection />

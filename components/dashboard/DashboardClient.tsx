@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase"   // solo para Storage upload (File API)
+import { supabase } from "@/lib/supabase/client"
 import { editReview, deleteItem, updateProfile } from "@/app/dashboard/actions"
 import { ProfileTab }      from "@/components/dashboard/ProfileTab"
 import { ReviewsTab }      from "@/components/dashboard/ReviewsTab"
@@ -53,6 +53,10 @@ export function DashboardClient({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveMsg({ type: "error", text: "La imagen no puede superar 5MB." })
+      return
+    }
     setUploading(true)
     setSaveMsg(null)
     try {

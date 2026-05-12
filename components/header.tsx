@@ -3,11 +3,9 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { LogOut, User, ShieldAlert, Menu, X, Bell, CheckCircle2, MessageSquare } from "lucide-react"
-
-const ADMIN_EMAIL = "enrique.barroso84@gmail.com"
 
 // --- COMPONENTE DE LA CAMPANITA Y DESPLEGABLE ---
 function NotificationBell({ userId }: { userId: string }) {
@@ -143,7 +141,7 @@ function NotificationBell({ userId }: { userId: string }) {
 }
 // --- FIN COMPONENTE DE NOTIFICACIONES ---
 
-export function Header() {
+export function Header({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter()
   const [session, setSession] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -171,8 +169,6 @@ export function Header() {
     router.push("/")
     router.refresh()
   }
-
-  const isAdmin = session?.user?.email?.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

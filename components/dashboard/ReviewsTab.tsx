@@ -136,6 +136,7 @@ export function ReviewsTab({ reviews, loading, onEdit, onDelete }: ReviewsTabPro
                     </Button>
                     <Button
                       variant="ghost" size="icon"
+                      aria-label="Eliminar reseña"
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
                       onClick={() => onDelete(review.id)}
                     >

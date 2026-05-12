@@ -1,7 +1,85 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
+
+// ── Rate limiters ─────────────────────────────────────────────
+// Solo se instancian si las env vars están presentes; si no, se omite
+// el check (útil en desarrollo local sin Redis configurado).
+function getRatelimiters() {
+  const url   = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  if (!url || !token) return null
+
+  const redis = new Redis({ url, token })
+
+  return {
+    // /auth/register → 5 intentos por IP en 10 minutos
+    register: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '10 m'),
+      prefix: 'rl:register',
+    }),
+    // /submit-review/* → 10 por IP en 1 hora
+    submitReview: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, '60 m'),
+      prefix: 'rl:submit',
+    }),
+  }
+}
+
+const limiters = getRatelimiters()
+
+// ── Rutas POST protegidas con rate limit ──────────────────────
+async function applyRateLimit(request: NextRequest): Promise<NextResponse | null> {
+  if (!limiters) return null                          // sin Redis → sin límite
+  if (request.method !== 'POST') return null          // solo POST
+
+  const { pathname } = request.nextUrl
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+             ?? request.headers.get('x-real-ip')
+             ?? 'anonymous'
+
+  let limiter: Ratelimit | null = null
+
+  if (pathname === '/auth/register') {
+    limiter = limiters.register
+  } else if (
+    pathname === '/submit-review/review' ||
+    pathname === '/submit-review/question'
+  ) {
+    limiter = limiters.submitReview
+  }
+
+  if (!limiter) return null
+
+  const { success, limit, remaining, reset } = await limiter.limit(ip)
+
+  if (!success) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-RateLimit-Limit':     String(limit),
+          'X-RateLimit-Remaining': String(remaining),
+          'X-RateLimit-Reset':     String(reset),
+          'Retry-After':           String(Math.ceil((reset - Date.now()) / 1000)),
+        },
+      }
+    )
+  }
+
+  return null
+}
 
 export async function middleware(request: NextRequest) {
+  // ── Rate limiting (se evalúa antes que auth) ──────────────
+  const rateLimitResponse = await applyRateLimit(request)
+  if (rateLimitResponse) return rateLimitResponse
+
   // supabaseResponse se reasigna dentro de setAll si Supabase necesita
   // escribir cookies de sesión renovada. Devolver ESTA variable (no una
   // nueva) garantiza que las cookies lleguen al navegador.

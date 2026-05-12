@@ -88,6 +88,7 @@ export function RatingsBlock({ ratings, onChange }: RatingsBlockProps) {
         {CATEGORIES.map(({ key, label, description, icon: Icon }) => (
           <div
             key={key}
+            data-testid={`rating-${key}`}
             className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-secondary/20 border border-border/50"
           >
             <div className="flex items-start gap-3 sm:w-56 shrink-0">
