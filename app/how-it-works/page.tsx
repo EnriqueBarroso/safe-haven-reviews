@@ -6,12 +6,18 @@ export const metadata = {
 }
 
 import { Button } from "@/components/ui/button"
-import { ShieldCheck, Search, MessageSquare, ExternalLink, UserCheck, AlertTriangle } from "lucide-react"
+import { ShieldCheck, Search, MessageSquare, ExternalLink, UserCheck, AlertTriangle, ArrowLeft } from "lucide-react"
 
 export default function HowItWorksPage() {
   return (
     <div className="container mx-auto py-16 px-4 max-w-4xl">
-      
+
+      <div className="mb-8">
+        <Button variant="ghost" asChild className="gap-2 -ml-3">
+          <Link href="/"><ArrowLeft className="h-4 w-4" /> Volver al inicio</Link>
+        </Button>
+      </div>
+
       {/* Cabecera */}
       <div className="text-center mb-16">
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
