@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { LogOut, User, ShieldAlert, Menu, X, Bell, CheckCircle2, MessageSquare } from "lucide-react"
 
 // --- COMPONENTE DE LA CAMPANITA Y DESPLEGABLE ---
@@ -86,6 +87,9 @@ function NotificationBell({ userId }: { userId: string }) {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={unreadCount > 0 ? `Ver notificaciones (${unreadCount} sin leer)` : "Ver notificaciones"}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
         className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors flex items-center justify-center"
       >
         <Bell className="h-5 w-5" />
@@ -175,16 +179,18 @@ export function Header({ isAdmin }: { isAdmin: boolean }) {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
 
         {/* LOGO */}
-        <Link href="/" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
-          <img src="/yafui-logo-compact.png" alt="YaFui" className="h-12 w-auto md:hidden" />
-          <img src="/yafui-logo.png" alt="YaFui" className="h-12 w-auto hidden md:block" />
+        <Link href="/" aria-label="YaFui - Ir al inicio" className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm" onClick={() => setIsMobileMenuOpen(false)}>
+          <picture>
+            <source media="(min-width: 768px)" srcSet="/yafui-logo.png" />
+            <img src="/yafui-logo-compact.png" alt="YaFui" className="h-12 w-auto" />
+          </picture>
         </Link>
 
         {/* NAVEGACIÓN DESKTOP */}
-        <nav className="hidden items-center gap-6 md:flex">
-          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary">Inicio</Link>
-          <Link href="/profiles" className="text-sm font-medium text-muted-foreground hover:text-primary">Explorar</Link>
-          <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary">Cómo Funciona</Link>
+        <nav aria-label="Navegación principal" className="hidden items-center gap-6 md:flex">
+          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">Inicio</Link>
+          <Link href="/profiles" className="text-sm font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">Explorar</Link>
+          <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">Cómo Funciona</Link>
         </nav>
 
         {/* BOTONES DESKTOP */}
@@ -204,9 +210,16 @@ export function Header({ isAdmin }: { isAdmin: boolean }) {
                   <Button variant="outline" size="sm" asChild className="gap-2 border-primary/20 hover:bg-primary/10">
                     <Link href="/dashboard"><User className="h-4 w-4 text-primary" /><span className="font-semibold">Mi Panel</span></Link>
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={handleSignOut} title="Cerrar Sesión" className="hover:text-destructive">
-                    <LogOut className="h-5 w-5" />
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Cerrar sesión" className="hover:text-destructive">
+                          <LogOut className="h-5 w-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Cerrar sesión</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -225,6 +238,8 @@ export function Header({ isAdmin }: { isAdmin: boolean }) {
             <NotificationBell userId={session.user.id} />
           )}
           <button
+            aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={isMobileMenuOpen}
             className="p-2 text-muted-foreground hover:text-foreground"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -236,9 +251,9 @@ export function Header({ isAdmin }: { isAdmin: boolean }) {
       {/* MENÚ DESPLEGABLE MÓVIL */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-16 left-0 w-full border-b bg-background shadow-lg px-4 py-6 flex flex-col gap-4 z-50">
-          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md">Inicio</Link>
-          <Link href="/profiles" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md">Explorar Reseñas</Link>
-          <Link href="/how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md">Cómo Funciona</Link>
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Inicio</Link>
+          <Link href="/profiles" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Explorar Reseñas</Link>
+          <Link href="/how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Cómo Funciona</Link>
 
           <hr className="my-2 border-border/50" />
 

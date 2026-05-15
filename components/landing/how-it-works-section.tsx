@@ -2,10 +2,10 @@ import { ShieldCheck, Star, Users } from "lucide-react"
 
 export function HowItWorksSection() {
   return (
-    <section className="py-20 bg-secondary/30 border-y border-border/50">
+    <section aria-labelledby="heading-por-que" className="py-20 bg-secondary/30 border-y border-border/50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight mb-4">¿Por qué usar YaFui?</h2>
+          <h2 id="heading-por-que" className="text-3xl font-bold tracking-tight mb-4">¿Por qué usar YaFui?</h2>
           <p className="text-muted-foreground">Una plataforma diseñada pensando en tu seguridad y en la calidad de la información.</p>
         </div>
         

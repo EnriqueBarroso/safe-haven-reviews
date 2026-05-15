@@ -36,7 +36,7 @@ export function RecentProfilesSection() {
 
   if (isLoading) {
     return (
-      <section className="py-20">
+      <section aria-label="Cargando perfiles recientes" className="py-20">
         <div className="container mx-auto px-4 flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -47,12 +47,12 @@ export function RecentProfilesSection() {
   if (profiles.length === 0) return null;
 
   return (
-    <section className="py-20">
+    <section aria-labelledby="heading-recientes" className="py-20">
       <div className="container mx-auto px-4">
 
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-2">Añadidos recientemente</h2>
+            <h2 id="heading-recientes" className="text-3xl font-bold tracking-tight mb-2">Añadidos recientemente</h2>
             <p className="text-muted-foreground">Descubre los perfiles más recientes reseñados por la comunidad.</p>
           </div>
           <Button variant="ghost" asChild className="hidden md:flex hover:text-primary">

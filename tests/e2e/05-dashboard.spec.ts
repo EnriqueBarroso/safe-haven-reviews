@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { loginAsTestUser } from '../helpers/auth'
+import { cleanupTestData } from '../helpers/cleanup'
 
 async function selectRadix(page: any, labelText: string, optionText: string) {
   const fieldGroup = page.locator('div.space-y-2').filter({ hasText: labelText }).first()
@@ -14,6 +15,10 @@ async function clickStars(page: any, testId: string, stars: number) {
 test.describe('Dashboard — borrar reseña', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestUser(page)
+  })
+
+  test.afterAll(async () => {
+    await cleanupTestData()
   })
 
   test('crea una reseña y la elimina desde el dashboard', async ({ page }) => {

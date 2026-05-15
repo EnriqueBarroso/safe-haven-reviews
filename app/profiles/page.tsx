@@ -52,6 +52,8 @@ function computeStats(profile: any): ProfileWithStats {
   }
 }
 
+const PAGE_SIZE = 12
+
 export default async function ProfilesPage({
   searchParams,
 }: {
@@ -60,9 +62,14 @@ export default async function ProfilesPage({
     category?:    string
     serviceType?: string
     search?:      string
+    page?:        string
   }>
 }) {
-  const { city, category, serviceType, search } = await searchParams
+  const { city, category, serviceType, search, page: pageParam } = await searchParams
+  const page = Math.max(1, Number(pageParam) || 1)
+  const from = (page - 1) * PAGE_SIZE
+  const to   = from + PAGE_SIZE - 1
+
   const supabase = await createClient()
 
   // ── Query dinámica: filtros aplicados en BD, no en JS ────
@@ -72,7 +79,7 @@ export default async function ProfilesPage({
       id, name, city, slug, category, price_range, service_type, platform_url, tags, image_url,
       reviews ( overall, type, review_images ( image_url ) ),
       questions ( id )
-    `)
+    `, { count: "exact" })
     .order("created_at", { ascending: false })
 
   if (city)        profilesQuery = profilesQuery.eq("city", city)
@@ -81,6 +88,8 @@ export default async function ProfilesPage({
   if (search)      profilesQuery = profilesQuery.or(
     `name.ilike.%${search}%,city.ilike.%${search}%`
   )
+
+  profilesQuery = profilesQuery.range(from, to)
 
   // ── 4 queries en paralelo ────────────────────────────────
   const [profilesRes, reviewsRes, questionsRes, citiesRes] = await Promise.all([
@@ -106,7 +115,9 @@ export default async function ProfilesPage({
   ])
 
   // Stats pre-computados en servidor → enviamos datos limpios al cliente
-  const profiles = (profilesRes.data ?? []).map(computeStats)
+  const profiles    = (profilesRes.data ?? []).map(computeStats)
+  const totalCount  = profilesRes.count ?? 0
+  const totalPages  = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   const allCities = [
     ...new Set(
@@ -118,7 +129,7 @@ export default async function ProfilesPage({
     <div className="flex min-h-screen flex-col">
       <HeaderServer />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <div className="container mx-auto px-4 py-10 max-w-6xl">
           <div className="mb-8 text-center md:text-left">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">
@@ -138,6 +149,9 @@ export default async function ProfilesPage({
             currentCategory={category    ?? ""}
             currentServiceType={serviceType ?? ""}
             currentSearch={search      ?? ""}
+            totalCount={totalCount}
+            currentPage={page}
+            totalPages={totalPages}
           />
         </div>
       </main>

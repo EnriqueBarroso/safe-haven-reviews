@@ -2,12 +2,21 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Search, Lock, PlusSquare } from "lucide-react"
 
 export function HeroSection() {
+  const router = useRouter()
   const [session, setSession] = useState<any>(null)
+  const [query, setQuery] = useState("")
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = query.trim()
+    if (q) router.push(`/profiles?search=${encodeURIComponent(q)}`)
+  }
 
   useEffect(() => {
     // Obtenemos la sesión inicial
@@ -24,7 +33,7 @@ export function HeroSection() {
   }, [])
 
   return (
-    <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden">
+    <section aria-labelledby="heading-hero" className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden">
       {/* Fondo decorativo */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background"></div>
       
@@ -33,7 +42,7 @@ export function HeroSection() {
           <Lock className="h-4 w-4" /> Comunidad 100% Anónima
         </div>
         
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 max-w-4xl mx-auto leading-tight">
+        <h1 id="heading-hero" className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 max-w-4xl mx-auto leading-tight">
           La base de datos de confianza para <span className="text-primary">tus consultas</span>
         </h1>
         
@@ -41,6 +50,26 @@ export function HeroSection() {
           Comparte experiencias, pregunta a otros usuarios y verifica perfiles antes de tu próximo encuentro.
         </p>
         
+        {/* BUSCADOR */}
+        <form onSubmit={handleSearch} className="relative max-w-xl mx-auto mb-8">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Busca por nombre o ciudad..."
+            aria-label="Buscar perfiles por nombre o ciudad"
+            className="w-full h-14 pl-12 pr-32 rounded-full border border-border bg-background/80 backdrop-blur text-base shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-5 h-10"
+          >
+            Buscar
+          </Button>
+        </form>
+
         {/* BOTONES PRINCIPALES: Siempre visibles para fomentar la participación */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
           <Button size="lg" asChild className="w-full sm:w-auto h-14 px-8 text-lg shadow-xl shadow-primary/20">

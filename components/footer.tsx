@@ -10,7 +10,7 @@ export function Footer() {
           
           {/* Columna 1: Marca y Descripción */}
           <div className="col-span-1 md:col-span-1 lg:col-span-1">
-            <Link href="/" className="inline-block mb-4">
+            <Link href="/" aria-label="YaFui - Ir al inicio" className="inline-block mb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">
               <img src="/yafui-logo-compact.png" alt="YaFui" className="h-10 w-auto" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -19,7 +19,7 @@ export function Footer() {
           </div>
 
           {/* Columna 2: Plataforma */}
-          <div>
+          <nav aria-label="Navegación de plataforma">
             <h3 className="text-sm font-semibold text-foreground mb-4">Plataforma</h3>
             <ul className="space-y-3">
               <li>
@@ -38,10 +38,10 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Columna 3: Legal y Privacidad */}
-          <div>
+          <nav aria-label="Navegación legal">
             <h3 className="text-sm font-semibold text-foreground mb-4">Privacidad y Legal</h3>
             <ul className="space-y-3">
               <li>
@@ -60,10 +60,10 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Columna 4: Soporte */}
-          <div>
+          <nav aria-label="Navegación de ayuda">
             <h3 className="text-sm font-semibold text-foreground mb-4">Ayuda</h3>
             <ul className="space-y-3">
               <li>
@@ -77,8 +77,8 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
-          
+          </nav>
+
         </div>
 
         {/* Separador y Copyright */}

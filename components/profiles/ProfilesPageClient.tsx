@@ -34,6 +34,9 @@ interface Props {
   currentCategory:    string
   currentServiceType: string
   currentSearch:      string
+  totalCount:         number
+  currentPage:        number
+  totalPages:         number
 }
 
 export function ProfilesPageClient({
@@ -45,7 +48,20 @@ export function ProfilesPageClient({
   currentCategory,
   currentServiceType,
   currentSearch,
+  totalCount,
+  currentPage,
+  totalPages,
 }: Props) {
+
+  function buildPageUrl(p: number) {
+    const params = new URLSearchParams()
+    if (currentCity        && currentCity        !== "all") params.set("city",        currentCity)
+    if (currentCategory    && currentCategory    !== "all") params.set("category",    currentCategory)
+    if (currentServiceType && currentServiceType !== "all") params.set("serviceType", currentServiceType)
+    if (currentSearch.trim())                               params.set("search",      currentSearch.trim())
+    params.set("page", String(p))
+    return `/profiles?${params.toString()}`
+  }
 
   const renderStars = (rating: number) => {
     if (!rating) return null
@@ -83,7 +99,7 @@ export function ProfilesPageClient({
           currentCategory={currentCategory}
           currentServiceType={currentServiceType}
           currentSearch={currentSearch}
-          totalCount={profiles.length}
+          totalCount={totalCount}
         />
 
         {profiles.length === 0 ? (
@@ -94,25 +110,57 @@ export function ProfilesPageClient({
             </Button>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {profiles.map((p) => (
-              <ProfileCard
-                key={p.id}
-                id={p.id}
-                slug={p.slug}
-                name={p.name}
-                city={p.city}
-                category={p.category ?? undefined}
-                priceRange={p.price_range ?? undefined}
-                serviceType={p.service_type ?? undefined}
-                platformUrl={p.platform_url ?? undefined}
-                tags={p.tags ?? undefined}
-                imageUrl={p.imageUrl ?? undefined}
-                rating={p.overall || 5.0}
-                reviewCount={p.reviewCount}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {profiles.map((p) => (
+                <ProfileCard
+                  key={p.id}
+                  id={p.id}
+                  slug={p.slug}
+                  name={p.name}
+                  city={p.city}
+                  category={p.category ?? undefined}
+                  priceRange={p.price_range ?? undefined}
+                  serviceType={p.service_type ?? undefined}
+                  platformUrl={p.platform_url ?? undefined}
+                  tags={p.tags ?? undefined}
+                  imageUrl={p.imageUrl ?? undefined}
+                  rating={p.overall || 5.0}
+                  reviewCount={p.reviewCount}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-10">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  disabled={currentPage <= 1}
+                  aria-disabled={currentPage <= 1}
+                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                >
+                  <Link href={buildPageUrl(currentPage - 1)}>← Anterior</Link>
+                </Button>
+
+                <span className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  disabled={currentPage >= totalPages}
+                  aria-disabled={currentPage >= totalPages}
+                  className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                >
+                  <Link href={buildPageUrl(currentPage + 1)}>Siguiente →</Link>
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </TabsContent>
 

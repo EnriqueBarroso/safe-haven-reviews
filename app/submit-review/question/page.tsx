@@ -161,7 +161,7 @@ export default function QuestionFormPage() {
     <div className="flex min-h-screen flex-col bg-secondary/10">
       <Header isAdmin={false} />
 
-      <main className="flex-1 container mx-auto px-4 py-10 max-w-2xl">
+      <main id="main-content" className="flex-1 container mx-auto px-4 py-10 max-w-2xl">
         <Button variant="ghost" asChild className="mb-6 gap-2 -ml-3">
           <Link href="/submit-review"><ArrowLeft className="h-4 w-4" /> Volver</Link>
         </Button>

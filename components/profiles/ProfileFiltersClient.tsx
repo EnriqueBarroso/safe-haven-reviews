@@ -97,6 +97,7 @@ export function ProfileFiltersClient({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Nombre o ciudad..."
+            aria-label="Buscar perfiles por nombre o ciudad"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"

@@ -1,9 +1,14 @@
 import { test, expect } from '@playwright/test'
 import { loginAsTestUser } from '../helpers/auth'
+import { cleanupTestData } from '../helpers/cleanup'
 
 test.describe('Publicar pregunta en el foro', () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestUser(page)
+  })
+
+  test.afterAll(async () => {
+    await cleanupTestData()
   })
 
   test('publica un hilo y redirige al perfil en pestaña foro', async ({ page }) => {

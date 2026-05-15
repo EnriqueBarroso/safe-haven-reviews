@@ -1,9 +1,9 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { StarIcon, MapPin, Tag, ExternalLink } from "lucide-react"
+import { StarIcon, MapPin, ExternalLink, ChevronRight } from "lucide-react"
 
 interface ProfileCardProps {
   id: string
@@ -24,7 +24,6 @@ export function ProfileCard({
   id, name, city, slug, rating, reviewCount, category,
   priceRange, serviceType, platformUrl, tags, imageUrl
 }: ProfileCardProps) {
-  const router = useRouter()
 
   const formatServiceType = (type?: string) => {
     const types: Record<string, string> = {
@@ -37,23 +36,23 @@ export function ProfileCard({
   }
 
   return (
-    <div
-      className="group block h-full cursor-pointer"
-      onClick={() => router.push(`/profiles/${slug}`)}
-    >
+    <Link href={`/profiles/${slug}`} aria-label={`Ver perfil de ${name} en ${city}`} className="group block h-full">
       <Card className="overflow-hidden border-border/50 bg-card/50 transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 h-full flex flex-col">
 
         {/* CABECERA: Imagen/Avatar con Badges */}
-        <div className="relative aspect-[4/3] bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="relative aspect-4/3 bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0">
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={name}
+              alt={`Foto de perfil de ${name}, ${city}`}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             />
           ) : (
-            <div className="text-muted-foreground/20 group-hover:scale-110 transition-transform duration-500">
-              <Tag className="h-16 w-16" />
+            <div className="w-full h-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500"
+              style={{ background: "linear-gradient(135deg, #00ff87 0%, #ff00e5 100%)" }}>
+              <span className="text-4xl font-bold text-white drop-shadow-md select-none">
+                {name.slice(0, 2).toUpperCase()}
+              </span>
             </div>
           )}
 
@@ -78,16 +77,15 @@ export function ProfileCard({
                 {name}
               </h3>
               {platformUrl && (
-                <a
-                  href={platformUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(platformUrl, '_blank', 'noopener,noreferrer'); }}
                   className="text-muted-foreground hover:text-primary transition-colors shrink-0"
                   title="Ver anuncio original"
+                  aria-label="Ver anuncio original"
                 >
                   <ExternalLink className="h-4 w-4" />
-                </a>
+                </button>
               )}
             </div>
             <div className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded text-xs font-bold text-primary shrink-0 ml-2">
@@ -128,11 +126,13 @@ export function ProfileCard({
           <span className="text-xs text-muted-foreground">
             {reviewCount} {reviewCount === 1 ? "reseña" : "reseñas"}
           </span>
-          <span className="text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-            Ver detalle
+          {/* Chevron: visible siempre en móvil, se convierte en "Ver detalle" en hover desktop */}
+          <span className="text-xs font-semibold text-primary flex items-center gap-0.5">
+            <span className="hidden group-hover:inline transition-opacity">Ver detalle</span>
+            <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </span>
         </CardFooter>
       </Card>
-    </div>
+    </Link>
   )
 }
