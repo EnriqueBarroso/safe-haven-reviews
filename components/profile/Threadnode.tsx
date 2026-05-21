@@ -160,21 +160,6 @@ export function ThreadNode({
             </div>
           )}
 
-          {/* Botón WhatsApp */}
-          {node.phone && (
-            <div className="pt-1">
-              <a
-                href={`https://wa.me/${node.phone.replace(/\s+/g, "")}?text=${encodeURIComponent("Hola, te escribo desde YaFui (yafui.es) donde he visto tu perfil 😊")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-medium transition-colors"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Contactar por WhatsApp
-              </a>
-            </div>
-          )}
-
           {/* Botón Responder */}
           {session && !isReplying && (
             <div className="pt-1">

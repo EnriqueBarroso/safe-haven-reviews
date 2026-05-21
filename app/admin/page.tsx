@@ -1,23 +1,21 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { AdminDashboardClient } from "@/components/admin/AdminDashboardClient"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ShieldCheck } from "lucide-react"
 
-// Nunca servir esta página desde caché: los datos de moderación deben ser frescos
 export const dynamic = "force-dynamic"
 
 export default async function AdminPage() {
   const supabase = await createClient()
 
-  // Segunda verificación servidor (el middleware ya lo bloqueó, esto es cinturón + tirantes)
-  // getUser() valida el JWT contra Supabase; nunca confiar solo en cookies locales
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/")
 
-  // Fetch paralelo de datos iniciales — sin waterfalls, sin useEffect, sin spinner
-  const [reportsRes, questionsRes] = await Promise.all([
+  // ── Datos de moderación + perfiles (anon client — RLS aplica) ─
+  const [reportsRes, questionsRes, profilesRes] = await Promise.all([
     supabase
       .from("reports")
       .select(`
@@ -32,7 +30,64 @@ export default async function AdminPage() {
       .select(`*, profiles ( name, city )`)
       .order("created_at", { ascending: false })
       .limit(50),
+
+    // Perfiles con conteo de reviews y questions embebidos
+    supabase
+      .from("profiles")
+      .select(`
+        id, name, city, slug, category, image_url, created_at,
+        reviews ( id ),
+        questions ( id )
+      `)
+      .order("created_at", { ascending: false }),
   ])
+
+  const enrichedProfiles = (profilesRes.data ?? []).map((p: any) => ({
+    id:            p.id,
+    name:          p.name,
+    city:          p.city,
+    slug:          p.slug,
+    category:      p.category ?? null,
+    image_url:     p.image_url ?? null,
+    created_at:    p.created_at,
+    reviewCount:   (p.reviews   ?? []).length,
+    questionCount: (p.questions ?? []).length,
+  }))
+
+  // ── Usuarios (service role — bypass RLS) ─────────────────────
+  // Fallback graceful si SUPABASE_SERVICE_ROLE_KEY no está configurada.
+  let enrichedUsers: any[]  = []
+  let usersError:   string | null = null
+
+  try {
+    const admin = createAdminClient()
+
+    const [usersRes, reviewsRes, questionsCountRes] = await Promise.all([
+      admin.auth.admin.listUsers({ perPage: 1000 }),
+      supabase.from("reviews").select("user_id").is("parent_id", null),
+      supabase.from("questions").select("user_id").is("parent_id", null),
+    ])
+
+    // Conteos por user_id calculados en servidor para no enviar todo al cliente
+    const reviewCount   = new Map<string, number>()
+    const questionCount = new Map<string, number>()
+    reviewsRes.data?.forEach((r) => reviewCount.set(r.user_id, (reviewCount.get(r.user_id) ?? 0) + 1))
+    questionsCountRes.data?.forEach((q) => questionCount.set(q.user_id, (questionCount.get(q.user_id) ?? 0) + 1))
+
+    enrichedUsers = (usersRes.data?.users ?? [])
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .map((u) => ({
+        id:            u.id,
+        email:         u.email ?? "",
+        alias:         u.user_metadata?.alias ?? null,
+        created_at:    u.created_at,
+        banned_until:  (u as any).banned_until ?? null,
+        reviewCount:   reviewCount.get(u.id) ?? 0,
+        questionCount: questionCount.get(u.id) ?? 0,
+      }))
+  } catch (err: unknown) {
+    usersError = err instanceof Error ? err.message : "Error al cargar usuarios."
+  }
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-5xl">
@@ -41,9 +96,7 @@ export default async function AdminPage() {
         asChild
         className="mb-6 gap-2 -ml-3 text-muted-foreground hover:text-foreground"
       >
-        <Link href="/">
-          <ArrowLeft className="h-4 w-4" /> Volver al portal
-        </Link>
+        <Link href="/"><ArrowLeft className="h-4 w-4" /> Volver al portal</Link>
       </Button>
 
       <header className="flex items-center gap-4 mb-10 pb-6 border-b">
@@ -52,14 +105,16 @@ export default async function AdminPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Centro de Moderación</h1>
-          <p className="text-muted-foreground">Administración global de reseñas y foro.</p>
+          <p className="text-muted-foreground">Administración global de reseñas, foro y usuarios.</p>
         </div>
       </header>
 
-      {/* Toda la interactividad (tabs, botones, estado) vive en el Client Component */}
       <AdminDashboardClient
-        initialReports={reportsRes.data ?? []}
+        initialReports={reportsRes.data   ?? []}
         initialQuestions={questionsRes.data ?? []}
+        initialUsers={enrichedUsers}
+        usersError={usersError}
+        initialProfiles={enrichedProfiles}
       />
     </div>
   )

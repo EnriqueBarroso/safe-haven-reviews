@@ -68,6 +68,13 @@ export default async function ProfileDetailPage({
     reviews.find((r) => r.review_images?.length > 0)?.review_images[0]?.image_url ??
     null
 
+  // Teléfono de la primera reseña raíz que lo tenga (ordenadas ASC por fecha)
+  const whatsappPhone =
+    reviews
+      .filter((r) => r.phone && !r.parent_id && (r.type === "review" || !r.type))
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .at(0)?.phone ?? null
+
   // Árboles (buildTree es función pura, no necesita cliente)
   const reviewTree   = buildTree(reviews.filter((r) => r.type === "review" || !r.type))
   const questionTree = buildTree(questions)
@@ -84,6 +91,7 @@ export default async function ProfileDetailPage({
       questionTree={questionTree}
       profileId={profile.id}
       defaultTab={defaultTab}
+      whatsappPhone={whatsappPhone}
     />
   )
 }

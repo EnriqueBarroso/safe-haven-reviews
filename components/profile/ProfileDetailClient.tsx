@@ -28,13 +28,14 @@ type Stats = {
 }
 
 interface Props {
-  profile:       any
-  stats:         Stats
-  coverImage:    string | null
-  reviewTree:    TreeNode[]
-  questionTree:  TreeNode[]
-  profileId:     string
-  defaultTab:    "reviews" | "forum"
+  profile:        any
+  stats:          Stats
+  coverImage:     string | null
+  reviewTree:     TreeNode[]
+  questionTree:   TreeNode[]
+  profileId:      string
+  defaultTab:     "reviews" | "forum"
+  whatsappPhone?: string | null
 }
 
 export function ProfileDetailClient({
@@ -45,6 +46,7 @@ export function ProfileDetailClient({
   questionTree,
   profileId,
   defaultTab,
+  whatsappPhone,
 }: Props) {
   const router = useRouter()
 
@@ -182,6 +184,18 @@ export function ProfileDetailClient({
                   rating={stats.overallAverage}
                   profileUrl={profileUrl}
                 />
+
+                {whatsappPhone && (
+                  <a
+                    href={`https://wa.me/${whatsappPhone.replace(/\s+/g, "")}?text=${encodeURIComponent("Hola, te escribo desde YaFui (yafui.es) donde he visto tu perfil 😊")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-semibold transition-colors shadow-sm"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Contactar por WhatsApp
+                  </a>
+                )}
               </div>
             </div>
           </div>
