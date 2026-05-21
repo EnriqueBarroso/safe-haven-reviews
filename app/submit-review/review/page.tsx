@@ -55,7 +55,7 @@ export default function SubmitReviewPage() {
   const [formData, setFormData] = useState({
     name: "", city: "", category: "", priceRange: "",
     serviceType: "", platformUrl: "", profileImageUrl: "",
-    price: "", duration: "", details: "", tags: [] as string[],
+    price: "", duration: "", details: "", phone: "", tags: [] as string[],
   })
 
   useEffect(() => {
@@ -170,6 +170,7 @@ export default function SubmitReviewPage() {
         ...ratings,
         price: Number(formData.price), duration: Number(formData.duration),
         details: formData.details,
+        phone: formData.phone.trim() || null,
       }
 
       const { data: newReview, error: reviewError } = await supabase
@@ -403,6 +404,20 @@ export default function SubmitReviewPage() {
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     required />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  Teléfono{" "}
+                  <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
+                </Label>
+                <Input
+                  type="tel"
+                  placeholder="+34 600 000 000"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value.replace(/[^0-9 +]/g, "") })
+                  }
+                />
               </div>
               <div className="space-y-2">
                 <Label>Narra tu experiencia</Label>

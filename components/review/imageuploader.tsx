@@ -23,7 +23,7 @@ interface ImageUploaderProps {
 export function ImageUploader({
   images,
   onChange,
-  maxImages = 5,
+  maxImages = 10,
   label = "Fotos de tu visita",
   hint = `Hasta ${maxImages} imágenes — solo visibles en tu reseña`,
 }: ImageUploaderProps) {

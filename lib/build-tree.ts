@@ -15,6 +15,7 @@ export type TreeNode = {
   price?: number | null
   duration?: number | null
   type?: string
+  phone?: string | null
   review_images?: any[]
   children: TreeNode[]
 }

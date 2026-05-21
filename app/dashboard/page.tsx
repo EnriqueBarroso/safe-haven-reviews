@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const [reviewsRes, questionsRes] = await Promise.all([
     supabase
       .from("reviews")
-      .select("*, profiles ( name, city )")
+      .select("*, profiles ( name, city ), review_images ( id, image_url, position )")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
 

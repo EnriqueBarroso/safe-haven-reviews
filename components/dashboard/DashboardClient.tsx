@@ -4,11 +4,12 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase/client"
-import { editReview, deleteItem, updateProfile } from "@/app/dashboard/actions"
-import { ProfileTab }      from "@/components/dashboard/ProfileTab"
-import { ReviewsTab }      from "@/components/dashboard/ReviewsTab"
-import { EditReviewModal } from "@/components/dashboard/EditreviewModal"
-import { DeleteReviewModal } from "@/components/dashboard/DeleteReviewModal"
+import { editReview, editQuestion, deleteItem, updateProfile } from "@/app/dashboard/actions"
+import { ProfileTab }          from "@/components/dashboard/ProfileTab"
+import { ReviewsTab }          from "@/components/dashboard/ReviewsTab"
+import { EditReviewModal }     from "@/components/dashboard/EditreviewModal"
+import { EditQuestionModal }   from "@/components/dashboard/EditQuestionModal"
+import { DeleteReviewModal }   from "@/components/dashboard/DeleteReviewModal"
 import { Button } from "@/components/ui/button"
 import { Shield, MessageSquare, ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -31,25 +32,24 @@ export function DashboardClient({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  // ── Estado de perfil (UI + edición en curso) ──────────────
-  const [alias,          setAlias]          = useState(initialAlias)
+  // ── Perfil ────────────────────────────────────────────────────
+  const [alias,           setAlias]           = useState(initialAlias)
   const [customAvatarUrl, setCustomAvatarUrl] = useState(initialAvatarUrl)
-  const [uploading,      setUploading]      = useState(false)
-  const [updating,       setUpdating]       = useState(false)
-  const [saveMsg,        setSaveMsg]        = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [uploading,       setUploading]       = useState(false)
+  const [updating,        setUpdating]        = useState(false)
+  const [saveMsg,         setSaveMsg]         = useState<{ type: "success" | "error"; text: string } | null>(null)
 
-  // ── Datos de actividad: inicializados desde el servidor ───
-  // No hay useEffect ni fetch — los datos vienen de props del Server Component.
-  // useState solo permite actualizaciones optimistas locales.
+  // ── Datos de actividad ───────────────────────────────────────
   const [reviews,   setReviews]   = useState(initialReviews)
   const [questions, setQuestions] = useState(initialQuestions)
 
-  // ── Estado de modales (UI pura) ────────────────────────────
-  const [editingReview,  setEditingReview]  = useState<any | null>(null)
-  const [deletingItem,   setDeletingItem]   = useState<{ id: string; table: "reviews" | "questions" } | null>(null)
-  const [isDeleting,     setIsDeleting]     = useState(false)
+  // ── Modales ───────────────────────────────────────────────────
+  const [editingReview,   setEditingReview]   = useState<any | null>(null)
+  const [editingQuestion, setEditingQuestion] = useState<any | null>(null)
+  const [deletingItem,    setDeletingItem]    = useState<{ id: string; table: "reviews" | "questions" } | null>(null)
+  const [isDeleting,      setIsDeleting]      = useState(false)
 
-  // ── Avatar upload (File API — solo puede ejecutarse en browser) ──
+  // ── Avatar upload ─────────────────────────────────────────────
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -63,8 +63,7 @@ export function DashboardClient({
       const ext      = file.name.split(".").pop()
       const fileName = `${user.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(fileName, file, { upsert: true })
+        .from("avatars").upload(fileName, file, { upsert: true })
       if (uploadError) throw uploadError
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(fileName)
       setCustomAvatarUrl(publicUrl)
@@ -76,7 +75,7 @@ export function DashboardClient({
     }
   }
 
-  // ── Guardar perfil → Server Action ────────────────────────
+  // ── Guardar perfil ────────────────────────────────────────────
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setUpdating(true)
@@ -90,39 +89,54 @@ export function DashboardClient({
     setUpdating(false)
   }
 
-  // ── Editar reseña → Server Action ─────────────────────────
-  const handleSaveEdit = async (
+  // ── Editar reseña ─────────────────────────────────────────────
+  const handleSaveReviewEdit = async (
     id:      string,
-    changes: { comment: string; price: number; duration: number }
+    changes: { comment: string; price: number; duration: number; phone: string | null }
   ) => {
     const { error } = await editReview(id, changes)
     if (!error) {
-      // Actualización optimista local
       setReviews((prev) =>
         prev.map((r) =>
           r.id === id
-            ? { ...r, details: changes.comment, price: changes.price, duration: changes.duration }
+            ? { ...r, details: changes.comment, price: changes.price, duration: changes.duration, phone: changes.phone }
             : r
         )
       )
       setEditingReview(null)
-      router.refresh() // sincroniza estado del servidor
+      router.refresh()
     } else {
       console.error("Error al editar reseña:", error)
     }
   }
 
-  // ── Borrar (con cascada) → Server Action ──────────────────
-  // Patrón: cerrar modal + actualización optimista → luego Server Action
-  // Si falla: router.refresh() revierte el estado al último snapshot del servidor
+  // ── Editar pregunta ───────────────────────────────────────────
+  const handleSaveQuestionEdit = async (
+    id:      string,
+    changes: { details: string; phone: string | null }
+  ) => {
+    const { error } = await editQuestion(id, changes)
+    if (!error) {
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === id ? { ...q, details: changes.details, phone: changes.phone } : q
+        )
+      )
+      setEditingQuestion(null)
+      router.refresh()
+    } else {
+      console.error("Error al editar pregunta:", error)
+    }
+  }
+
+  // ── Borrar ────────────────────────────────────────────────────
   const handleConfirmDelete = () => {
     if (!deletingItem) return
     const { id, table } = deletingItem
 
     setIsDeleting(true)
-    setDeletingItem(null) // cierra el modal inmediatamente
+    setDeletingItem(null)
 
-    // Actualización optimista
     if (table === "reviews") {
       setReviews((prev) => prev.filter((r) => r.id !== id))
     } else {
@@ -132,7 +146,7 @@ export function DashboardClient({
     startTransition(async () => {
       const { error } = await deleteItem(id, table)
       if (error) {
-        router.refresh() // revierte al estado real del servidor
+        router.refresh()
         alert("Error al borrar: " + error)
       }
       setIsDeleting(false)
@@ -161,7 +175,7 @@ export function DashboardClient({
             </TabsTrigger>
           </TabsList>
 
-          {/* ── Pestaña: Identidad ──────────────────────── */}
+          {/* ── Identidad ─────────────────────────────────── */}
           <TabsContent value="profile">
             <ProfileTab
               user={user}
@@ -176,11 +190,11 @@ export function DashboardClient({
             />
           </TabsContent>
 
-          {/* ── Pestaña: Actividad ──────────────────────── */}
+          {/* ── Actividad ─────────────────────────────────── */}
           <TabsContent value="activity">
             <div className="space-y-8">
               <Tabs defaultValue="reviews" className="w-full">
-                <TabsList className="mb-6 grid w-full grid-cols-2 max-w-[400px]">
+                <TabsList className="mb-6 grid w-full grid-cols-2 max-w-100">
                   <TabsTrigger value="reviews">
                     Reseñas ({reviews.length})
                   </TabsTrigger>
@@ -202,7 +216,7 @@ export function DashboardClient({
                   <ReviewsTab
                     reviews={questions}
                     loading={isPending}
-                    onEdit={setEditingReview}
+                    onEdit={setEditingQuestion}
                     onDelete={(id) => setDeletingItem({ id, table: "questions" })}
                   />
                 </TabsContent>
@@ -212,11 +226,19 @@ export function DashboardClient({
         </Tabs>
       </div>
 
-      {/* Modales — montados fuera del flujo para evitar layout shifts */}
+      {/* Modales ─────────────────────────────────────────────── */}
       <EditReviewModal
         review={editingReview}
+        userId={user.id}
         onClose={() => setEditingReview(null)}
-        onSave={handleSaveEdit}
+        onSave={handleSaveReviewEdit}
+      />
+
+      <EditQuestionModal
+        question={editingQuestion}
+        userId={user.id}
+        onClose={() => setEditingQuestion(null)}
+        onSave={handleSaveQuestionEdit}
       />
 
       <DeleteReviewModal

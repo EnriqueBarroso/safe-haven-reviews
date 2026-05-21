@@ -9,8 +9,8 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Loader2, Image as ImageIcon, Link as LinkIcon, Upload } from "lucide-react"
+import { ImageUploader, type ImagePreview } from "@/components/review/imageuploader"
+import { ArrowLeft, Loader2, Link as LinkIcon } from "lucide-react"
 
 function generateSlug(name: string, city: string): string {
   const str = `${name}-${city}`
@@ -34,10 +34,11 @@ export default function QuestionFormPage() {
   const [platformUrl, setPlatformUrl] = useState("")
   const [details, setDetails] = useState("")
 
-  // Imagen
-  const [imageTab, setImageTab] = useState<"upload" | "url">("upload")
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imageUrlInput, setImageUrlInput] = useState("")
+  // Imágenes
+  const [images, setImages] = useState<ImagePreview[]>([])
+
+  // Teléfono
+  const [phone, setPhone] = useState("")
 
   // Control
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -62,24 +63,17 @@ export default function QuestionFormPage() {
     setError(null)
 
     try {
-      // 1. Procesar imagen PRIMERO (antes de crear perfil)
+      // 1. Subir imágenes a Storage — se almacena la URL de la primera en image_url
       let finalImageUrl: string | null = null
 
-      if (imageTab === "url" && imageUrlInput.trim() !== "") {
-        finalImageUrl = imageUrlInput.trim()
-      } else if (imageTab === "upload" && imageFile) {
-        if (imageFile.size > 5 * 1024 * 1024) {
-          setError("La imagen no puede superar 5MB.")
-          setIsSubmitting(false)
-          return
-        }
-
-        const fileExt = imageFile.name.split(".").pop()
-        const fileName = `forum/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      for (let i = 0; i < images.length; i++) {
+        const { file } = images[i]
+        const fileExt = file.name.split(".").pop()
+        const fileName = `forum/${Date.now()}-${i}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
         const { error: uploadError } = await supabase.storage
           .from("review_images")
-          .upload(fileName, imageFile)
+          .upload(fileName, file)
 
         if (uploadError) throw new Error("Error al subir la imagen: " + uploadError.message)
 
@@ -87,7 +81,7 @@ export default function QuestionFormPage() {
           .from("review_images")
           .getPublicUrl(fileName)
 
-        finalImageUrl = publicUrl
+        if (i === 0) finalImageUrl = publicUrl
       }
 
       // 2. Buscar o crear perfil
@@ -143,6 +137,7 @@ export default function QuestionFormPage() {
           details,
           platform_url: platformUrl.trim() || null,
           image_url: finalImageUrl,
+          phone: phone.trim() || null,
         })
 
       if (questionError) throw questionError
@@ -217,47 +212,29 @@ export default function QuestionFormPage() {
               />
             </div>
 
-            {/* Sistema de Imagen */}
-            <div className="space-y-3 pt-2 border-t">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-amber-600" /> Adjuntar una imagen (Opcional)
+            {/* Imágenes adjuntas */}
+            <div className="pt-2 border-t">
+              <ImageUploader
+                images={images}
+                onChange={setImages}
+                maxImages={10}
+                label="Imágenes adjuntas"
+                hint="Hasta 10 imágenes — max 5MB cada una"
+              />
+            </div>
+
+            {/* Teléfono */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Teléfono{" "}
+                <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
               </label>
-
-              <Tabs value={imageTab} onValueChange={(val: any) => setImageTab(val)} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="upload" className="gap-2"><Upload className="h-4 w-4" /> Subir archivo</TabsTrigger>
-                  <TabsTrigger value="url" className="gap-2"><LinkIcon className="h-4 w-4" /> Pegar enlace URL</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="upload" className="pt-4">
-                  <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-secondary/50 transition-colors">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      id="image-upload"
-                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                    />
-                    <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center gap-2">
-                      <Upload className="h-8 w-8 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">
-                        {imageFile ? imageFile.name : "Haz clic para seleccionar una foto"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">PNG, JPG, WEBP (Max 5MB)</span>
-                    </label>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="url" className="pt-4 space-y-2">
-                  <Input
-                    type="url"
-                    placeholder="https://ejemplo.com/imagen.jpg"
-                    value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">Pega el enlace directo a una imagen terminada en .jpg, .png, etc.</p>
-                </TabsContent>
-              </Tabs>
+              <Input
+                type="tel"
+                placeholder="+34 600 000 000"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9 +]/g, ""))}
+              />
             </div>
 
             {/* Botón Submit */}
