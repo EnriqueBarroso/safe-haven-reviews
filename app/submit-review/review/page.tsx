@@ -180,13 +180,23 @@ export default function SubmitReviewPage() {
       // Imágenes de la reseña
       if (reviewImages.length > 0) {
         for (let i = 0; i < reviewImages.length; i++) {
-          const { file } = reviewImages[i]
-          const fileName = `${session.user.id}/${newReview.id}-${i}.${file.name.split(".").pop()}`
-          const { error: imgErr } = await supabase.storage
-            .from("review_images").upload(fileName, file)
-          if (imgErr) { console.error(imgErr.message); continue }
-          const { data: { publicUrl } } = supabase.storage
-            .from("review_images").getPublicUrl(fileName)
+          const img = reviewImages[i]
+          let publicUrl: string
+
+          if (img.file) {
+            const fileName = `${session.user.id}/${newReview.id}-${i}.${img.file.name.split(".").pop()}`
+            const { error: imgErr } = await supabase.storage
+              .from("review_images").upload(fileName, img.file)
+            if (imgErr) { console.error(imgErr.message); continue }
+            const { data: { publicUrl: pu } } = supabase.storage
+              .from("review_images").getPublicUrl(fileName)
+            publicUrl = pu
+          } else if (img.sourceUrl) {
+            publicUrl = img.sourceUrl
+          } else {
+            continue
+          }
+
           await supabase.from("review_images").insert({
             review_id: newReview.id, user_id: session.user.id,
             image_url: publicUrl, position: i,

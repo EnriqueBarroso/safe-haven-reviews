@@ -2,14 +2,16 @@
 
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ImageIcon, Plus, X } from "lucide-react"
+import { ImageIcon, Plus, X, Upload, Link as LinkIcon } from "lucide-react"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 export interface ImagePreview {
-  file: File
-  previewUrl: string
+  file?: File
+  previewUrl: string   // blob URL para archivos, URL directa para links
+  sourceUrl?: string   // solo para imágenes por URL
 }
 
 interface ImageUploaderProps {
@@ -20,6 +22,8 @@ interface ImageUploaderProps {
   hint?: string
 }
 
+type InputMode = "file" | "url"
+
 export function ImageUploader({
   images,
   onChange,
@@ -28,9 +32,14 @@ export function ImageUploader({
   hint = `Hasta ${maxImages} imágenes — solo visibles en tu reseña`,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [mode, setMode] = useState<InputMode>("file")
+  const [urlInput, setUrlInput] = useState("")
+  const [urlError, setUrlError] = useState<string | null>(null)
   const [sizeError, setSizeError] = useState<string | null>(null)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const canAddMore = images.length < maxImages
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
 
@@ -52,15 +61,34 @@ export function ImageUploader({
     e.target.value = ""
   }
 
+  const handleAddUrl = () => {
+    const url = urlInput.trim()
+    if (!url) return
+
+    try {
+      new URL(url)
+    } catch {
+      setUrlError("Introduce una URL válida (ej: https://ejemplo.com/foto.jpg)")
+      return
+    }
+
+    if (images.length >= maxImages) {
+      setUrlError(`Ya has añadido el máximo de ${maxImages} imágenes.`)
+      return
+    }
+
+    setUrlError(null)
+    onChange([...images, { previewUrl: url, sourceUrl: url }])
+    setUrlInput("")
+  }
+
   const handleRemove = (index: number) => {
-    const updated = images.filter((_, i) => {
-      if (i === index) URL.revokeObjectURL(images[i].previewUrl)
+    const updated = images.filter((img, i) => {
+      if (i === index && img.file) URL.revokeObjectURL(img.previewUrl)
       return i !== index
     })
     onChange(updated)
   }
-
-  const canAddMore = images.length < maxImages
 
   return (
     <div className="space-y-3 p-4 bg-background border rounded-xl">
@@ -70,30 +98,96 @@ export function ImageUploader({
           {label}
           <span className="text-xs font-normal text-muted-foreground">({hint})</span>
         </Label>
-        {canAddMore && (
+        <span className="text-xs text-muted-foreground">{images.length}/{maxImages}</span>
+      </div>
+
+      {/* Toggle modo */}
+      {canAddMore && (
+        <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg w-fit">
+          <button
+            type="button"
+            onClick={() => { setMode("file"); setSizeError(null) }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              mode === "file"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Upload className="h-3 w-3" /> Dispositivo
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode("url"); setSizeError(null) }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              mode === "url"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LinkIcon className="h-3 w-3" /> Desde URL
+          </button>
+        </div>
+      )}
+
+      {/* Input según modo */}
+      {canAddMore && mode === "file" && (
+        <>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          {images.length === 0 ? (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="w-full h-24 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              <Upload className="h-6 w-6" />
+              <span className="text-sm">Selecciona fotos de tu dispositivo</span>
+            </button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => inputRef.current?.click()}
+            >
+              <Plus className="h-3.5 w-3.5" /> Añadir desde dispositivo
+            </Button>
+          )}
+        </>
+      )}
+
+      {canAddMore && mode === "url" && (
+        <div className="flex gap-2">
+          <Input
+            type="url"
+            placeholder="https://ejemplo.com/imagen.jpg"
+            value={urlInput}
+            onChange={(e) => { setUrlInput(e.target.value); setUrlError(null) }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddUrl() } }}
+            className="flex-1 text-sm"
+          />
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="gap-1.5"
-            onClick={() => inputRef.current?.click()}
+            onClick={handleAddUrl}
+            disabled={!urlInput.trim()}
+            className="shrink-0 gap-1.5"
           >
-            <Plus className="h-3.5 w-3.5" />
-            Añadir foto
+            <Plus className="h-3.5 w-3.5" /> Añadir
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={handleChange}
-      />
-
-      {images.length > 0 ? (
+      {/* Grid de previews */}
+      {images.length > 0 && (
         <div className="flex flex-wrap gap-3 pt-1">
           {images.map((img, index) => (
             <div key={index} className="relative group">
@@ -102,8 +196,17 @@ export function ImageUploader({
                   src={img.previewUrl}
                   alt={`Imagen ${index + 1}`}
                   className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = ""
+                    ;(e.target as HTMLImageElement).style.display = "none"
+                  }}
                 />
               </div>
+              {img.sourceUrl && (
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center py-0.5 rounded-b-lg">
+                  URL
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => handleRemove(index)}
@@ -113,7 +216,7 @@ export function ImageUploader({
               </button>
             </div>
           ))}
-          {canAddMore && (
+          {canAddMore && mode === "file" && (
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
@@ -123,20 +226,10 @@ export function ImageUploader({
             </button>
           )}
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="w-full h-24 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-        >
-          <ImageIcon className="h-6 w-6" />
-          <span className="text-sm">Añadir fotos de tu visita</span>
-        </button>
       )}
 
-      {sizeError && (
-        <p className="text-sm text-destructive mt-1">{sizeError}</p>
-      )}
+      {sizeError && <p className="text-sm text-destructive">{sizeError}</p>}
+      {urlError  && <p className="text-sm text-destructive">{urlError}</p>}
     </div>
   )
 }

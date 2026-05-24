@@ -63,23 +63,29 @@ export default function QuestionFormPage() {
     setError(null)
 
     try {
-      // 1. Subir imágenes a Storage — se almacena la URL de la primera en image_url
+      // 1. Subir imágenes a Storage (o usar URL directa)
       let finalImageUrl: string | null = null
 
       for (let i = 0; i < images.length; i++) {
-        const { file } = images[i]
-        const fileExt = file.name.split(".").pop()
-        const fileName = `forum/${Date.now()}-${i}-${Math.random().toString(36).substring(2)}.${fileExt}`
+        const img = images[i]
+        let publicUrl: string
 
-        const { error: uploadError } = await supabase.storage
-          .from("review_images")
-          .upload(fileName, file)
-
-        if (uploadError) throw new Error("Error al subir la imagen: " + uploadError.message)
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("review_images")
-          .getPublicUrl(fileName)
+        if (img.file) {
+          const fileExt = img.file.name.split(".").pop()
+          const fileName = `forum/${Date.now()}-${i}-${Math.random().toString(36).substring(2)}.${fileExt}`
+          const { error: uploadError } = await supabase.storage
+            .from("review_images")
+            .upload(fileName, img.file)
+          if (uploadError) throw new Error("Error al subir la imagen: " + uploadError.message)
+          const { data: { publicUrl: pu } } = supabase.storage
+            .from("review_images")
+            .getPublicUrl(fileName)
+          publicUrl = pu
+        } else if (img.sourceUrl) {
+          publicUrl = img.sourceUrl
+        } else {
+          continue
+        }
 
         if (i === 0) finalImageUrl = publicUrl
       }
