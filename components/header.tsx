@@ -190,6 +190,7 @@ export function Header({ isAdmin }: { isAdmin: boolean }) {
         <nav aria-label="Navegación principal" className="hidden items-center gap-6 md:flex">
           <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">Inicio</Link>
           <Link href="/profiles" className="text-sm font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">Explorar</Link>
+          <Link href="/mapa" className="text-sm font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">Mapa</Link>
           <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm">Cómo Funciona</Link>
         </nav>
 
@@ -253,6 +254,7 @@ export function Header({ isAdmin }: { isAdmin: boolean }) {
         <div className="md:hidden absolute top-16 left-0 w-full border-b bg-background shadow-lg px-4 py-6 flex flex-col gap-4 z-50">
           <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Inicio</Link>
           <Link href="/profiles" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Explorar Reseñas</Link>
+          <Link href="/mapa" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Mapa</Link>
           <Link href="/how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-medium p-2 hover:bg-secondary/50 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Cómo Funciona</Link>
 
           <hr className="my-2 border-border/50" />
