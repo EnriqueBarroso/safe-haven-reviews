@@ -55,7 +55,8 @@ export default function SubmitReviewPage() {
   const [formData, setFormData] = useState({
     name: "", city: "", category: "", priceRange: "",
     serviceType: "", platformUrl: "", profileImageUrl: "",
-    price: "", duration: "", details: "", phone: "", tags: [] as string[],
+    price: "", duration: "", details: "", phone: "", address: "",
+    tags: [] as string[],
   })
 
   useEffect(() => {
@@ -126,6 +127,26 @@ export default function SubmitReviewPage() {
         finalProfileImageUrl = publicUrl
       }
 
+      // Geocodificar dirección con Nominatim (si se ha proporcionado)
+      let geoLat: number | null = null
+      let geoLng: number | null = null
+      const addressTrimmed = formData.address.trim()
+      if (addressTrimmed) {
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressTrimmed)}&format=json&limit=1`,
+            { headers: { "User-Agent": "YaFui/1.0" } },
+          )
+          const geoData = await geoRes.json()
+          if (Array.isArray(geoData) && geoData.length > 0) {
+            geoLat = parseFloat(geoData[0].lat)
+            geoLng = parseFloat(geoData[0].lon)
+          }
+        } catch {
+          // Fallo silencioso — la dirección se guarda igualmente sin coordenadas
+        }
+      }
+
       // Buscar o crear perfil
       const { data: existing } = await supabase
         .from("profiles").select("id, slug")
@@ -137,10 +158,14 @@ export default function SubmitReviewPage() {
 
       if (existing) {
         profileId = existing.id
-        if (finalProfileImageUrl) {
-          await supabase.from("profiles")
-            .update({ image_url: finalProfileImageUrl })
-            .eq("id", profileId)
+        const updates: Record<string, unknown> = {}
+        if (finalProfileImageUrl) updates.image_url = finalProfileImageUrl
+        if (addressTrimmed) {
+          updates.address = addressTrimmed
+          if (geoLat !== null) { updates.lat = geoLat; updates.lng = geoLng }
+        }
+        if (Object.keys(updates).length > 0) {
+          await supabase.from("profiles").update(updates).eq("id", profileId)
         }
       } else {
         if (!formData.category || !formData.priceRange || !formData.serviceType) {
@@ -158,6 +183,9 @@ export default function SubmitReviewPage() {
             image_url: finalProfileImageUrl || null,
             tags: formData.tags,
             seller_id: "user_submission",
+            address: addressTrimmed || null,
+            lat: geoLat,
+            lng: geoLng,
           }).select().single()
         if (error) throw error
         profileId = newProfile.id
@@ -314,6 +342,23 @@ export default function SubmitReviewPage() {
                     onChange={(e) => setFormData({ ...formData, platformUrl: e.target.value })}
                     placeholder="https://..." />
                 </div>
+              </div>
+
+              {/* Dirección para el mapa */}
+              <div className="space-y-2">
+                <Label>
+                  Dirección del local{" "}
+                  <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
+                </Label>
+                <Input
+                  placeholder="Dirección aproximada del local (opcional, ayuda a ubicarlo en el mapa)"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  No es obligatorio y basta con una referencia aproximada (calle, barrio o zona).
+                  Esta información se usa para mostrar el perfil en el mapa de la comunidad.
+                </p>
               </div>
 
               {/* Tags trans */}
