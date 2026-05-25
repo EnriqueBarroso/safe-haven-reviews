@@ -51,8 +51,7 @@ export function MapView({ profiles }: MapViewProps) {
       center={[40.4, -3.7]}
       zoom={6}
       scrollWheelZoom
-      className="h-full w-full"
-      style={{ background: "#09090b" }}
+      style={{ height: "100%", width: "100%" }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

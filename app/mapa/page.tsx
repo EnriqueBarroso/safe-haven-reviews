@@ -54,8 +54,8 @@ export default async function MapaPage() {
           </div>
         </div>
 
-        {/* Mapa — ocupa todo el espacio restante */}
-        <div className="flex-1 relative min-h-125">
+        {/* Mapa — altura explícita requerida por Leaflet (h-full no funciona sobre flex-1) */}
+        <div style={{ height: "calc(100vh - 130px)" }} className="relative min-h-125">
           {profiles.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center gap-4 text-center px-4 py-20">
               <MapPin className="h-12 w-12 text-primary/20" />
