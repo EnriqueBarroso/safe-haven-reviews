@@ -5,7 +5,7 @@ import Link from "next/link"
 import {
   deleteReview, dismissReport, deleteQuestion,
   suspendUser, unsuspendUser, deleteUserAndContent,
-  deleteProfile,
+  deleteProfile, updateProfileAddress,
 } from "@/app/admin/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Trash2, CheckCircle, AlertCircle, MessageSquare,
   Loader2, Users, ShieldOff, ShieldCheck, UserX,
-  LayoutList, Search, ExternalLink,
+  LayoutList, Search, ExternalLink, MapPin, Pencil, X, Check,
 } from "lucide-react"
 
 // ── Tipos ─────────────────────────────────────────────────────
@@ -32,6 +32,7 @@ type ProfileAdmin = {
   id: string; name: string; city: string; slug: string
   category: string | null; image_url: string | null
   created_at: string; reviewCount: number; questionCount: number
+  address: string | null; lat: number | null; lng: number | null
 }
 
 interface Props {
@@ -56,10 +57,12 @@ export function AdminDashboardClient({
   const [reports,       setReports]       = useState<Report[]>(initialReports)
   const [questions,     setQuestions]     = useState<QuestionRef[]>(initialQuestions)
   const [users,         setUsers]         = useState<AdminUser[]>(initialUsers)
-  const [profiles,      setProfiles]      = useState<ProfileAdmin[]>(initialProfiles)
-  const [profileSearch, setProfileSearch] = useState("")
-  const [isPending,     startTransition]  = useTransition()
-  const [activeId,      setActiveId]      = useState<string | null>(null)
+  const [profiles,        setProfiles]        = useState<ProfileAdmin[]>(initialProfiles)
+  const [profileSearch,   setProfileSearch]   = useState("")
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
+  const [addressInput,    setAddressInput]    = useState("")
+  const [isPending,       startTransition]    = useTransition()
+  const [activeId,        setActiveId]        = useState<string | null>(null)
 
   // ── Reportes ──────────────────────────────────────────────
   const handleDismissReport = (reportId: string) => {
@@ -157,6 +160,31 @@ export function AdminDashboardClient({
     startTransition(async () => {
       const { error } = await deleteProfile(profileId)
       if (error) { setProfiles(initialProfiles); alert("Error al eliminar perfil: " + error) }
+      setActiveId(null)
+    })
+  }
+
+  const handleEditAddress = (p: ProfileAdmin) => {
+    setEditingAddressId(p.id)
+    setAddressInput(p.address ?? "")
+  }
+
+  const handleSaveAddress = (profileId: string) => {
+    setActiveId(profileId)
+    startTransition(async () => {
+      const { error, lat, lng } = await updateProfileAddress(profileId, addressInput)
+      if (error) {
+        alert("Error al guardar la dirección: " + error)
+      } else {
+        setProfiles((prev) =>
+          prev.map((p) =>
+            p.id === profileId
+              ? { ...p, address: addressInput.trim() || null, lat, lng }
+              : p
+          )
+        )
+        setEditingAddressId(null)
+      }
       setActiveId(null)
     })
   }
@@ -368,7 +396,7 @@ export function AdminDashboardClient({
               const isActingOn = isPending && activeId === p.id
               return (
                 <Card key={p.id} className="overflow-hidden hover:border-border transition-colors">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 space-y-3">
                     <div className="flex items-center gap-4">
                       {/* Thumbnail */}
                       <div className="h-14 w-14 rounded-lg overflow-hidden border bg-secondary shrink-0 flex items-center justify-center">
@@ -397,6 +425,15 @@ export function AdminDashboardClient({
                           {" · "}
                           Creado {new Date(p.created_at).toLocaleDateString("es-ES")}
                         </p>
+                        {p.address && (
+                          <p className="text-[11px] text-primary/70 flex items-center gap-1 mt-0.5">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            {p.address}
+                            {p.lat && (
+                              <span className="text-green-600 ml-1">✓ geolocalizado</span>
+                            )}
+                          </p>
+                        )}
                       </div>
 
                       {/* Acciones */}
@@ -411,6 +448,18 @@ export function AdminDashboardClient({
                           </Link>
                         </Button>
                         <Button
+                          variant="outline" size="sm"
+                          className="gap-1.5"
+                          onClick={() =>
+                            editingAddressId === p.id
+                              ? setEditingAddressId(null)
+                              : handleEditAddress(p)
+                          }
+                        >
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Dirección</span>
+                        </Button>
+                        <Button
                           variant="ghost" size="sm"
                           className="text-destructive hover:bg-destructive/10 gap-1.5"
                           disabled={isActingOn}
@@ -420,6 +469,42 @@ export function AdminDashboardClient({
                         </Button>
                       </div>
                     </div>
+
+                    {/* Formulario inline de dirección */}
+                    {editingAddressId === p.id && (
+                      <div className="pt-2 border-t flex flex-col sm:flex-row gap-2">
+                        <Input
+                          autoFocus
+                          placeholder="Dirección aproximada del local (ej: Calle Gran Vía 10, Madrid)"
+                          value={addressInput}
+                          onChange={(e) => setAddressInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); handleSaveAddress(p.id) }
+                            if (e.key === "Escape") setEditingAddressId(null)
+                          }}
+                          className="flex-1 text-sm"
+                        />
+                        <div className="flex gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            className="gap-1.5"
+                            disabled={isPending && activeId === p.id}
+                            onClick={() => handleSaveAddress(p.id)}
+                          >
+                            {isPending && activeId === p.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <><Check className="h-3.5 w-3.5" /> Guardar</>
+                            }
+                          </Button>
+                          <Button
+                            size="sm" variant="ghost"
+                            onClick={() => setEditingAddressId(null)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )

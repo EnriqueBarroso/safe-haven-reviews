@@ -123,6 +123,48 @@ export async function deleteUserAndContent(userId: string): Promise<{ error: str
 
 // ── Gestión de perfiles ───────────────────────────────────────
 
+export async function updateProfileAddress(
+  profileId: string,
+  address: string,
+): Promise<{ error: string | null; lat: number | null; lng: number | null }> {
+  try {
+    await requireAdmin()
+    const admin = createAdminClient()
+
+    let lat: number | null = null
+    let lng: number | null = null
+
+    const trimmed = address.trim()
+    if (trimmed) {
+      try {
+        const res  = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&limit=1`,
+          { headers: { "User-Agent": "YaFui/1.0" } },
+        )
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          lat = parseFloat(data[0].lat)
+          lng = parseFloat(data[0].lon)
+        }
+      } catch {
+        // Geocodificación opcional — guardamos address sin coordenadas
+      }
+    }
+
+    const { error } = await admin
+      .from("profiles")
+      .update({ address: trimmed || null, lat, lng })
+      .eq("id", profileId)
+
+    if (error) return { error: error.message, lat: null, lng: null }
+    revalidatePath("/admin")
+    revalidatePath("/mapa")
+    return { error: null, lat, lng }
+  } catch (e: any) {
+    return { error: e.message, lat: null, lng: null }
+  }
+}
+
 export async function deleteProfile(profileId: string): Promise<{ error: string | null }> {
   try {
     await requireAdmin()

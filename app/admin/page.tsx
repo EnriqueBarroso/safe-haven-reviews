@@ -36,6 +36,7 @@ export default async function AdminPage() {
       .from("profiles")
       .select(`
         id, name, city, slug, category, image_url, created_at,
+        address, lat, lng,
         reviews ( id ),
         questions ( id )
       `)
@@ -50,6 +51,9 @@ export default async function AdminPage() {
     category:      p.category ?? null,
     image_url:     p.image_url ?? null,
     created_at:    p.created_at,
+    address:       p.address ?? null,
+    lat:           p.lat ?? null,
+    lng:           p.lng ?? null,
     reviewCount:   (p.reviews   ?? []).length,
     questionCount: (p.questions ?? []).length,
   }))
