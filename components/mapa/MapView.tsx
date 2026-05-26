@@ -48,8 +48,8 @@ export function MapView({ profiles }: MapViewProps) {
 
   return (
     <MapContainer
-      center={[40.4, -3.7]}
-      zoom={6}
+      center={[41.3874, 2.1686]}
+      zoom={13}
       scrollWheelZoom
       style={{ height: "100%", width: "100%" }}
     >
