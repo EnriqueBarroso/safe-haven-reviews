@@ -30,7 +30,9 @@ export function ThreadNode({
     (node.veracity && node.veracity > 0) ||
     (node.punctuality && node.punctuality > 0) ||
     (node.communication && node.communication > 0) ||
-    (node.hygiene && node.hygiene > 0)
+    (node.hygiene && node.hygiene > 0) ||
+    (node.discretion && node.discretion > 0) ||
+    (node.kindness && node.kindness > 0)
 
   const handleReplySuccess = () => {
     setIsReplying(false)
@@ -130,6 +132,12 @@ export function ThreadNode({
               )}
               {node.hygiene && node.hygiene > 0 && (
                 <span className="flex items-center gap-1 bg-secondary/40 px-2 py-1 rounded">Higiene: <strong>{node.hygiene}/5</strong></span>
+              )}
+              {node.discretion && node.discretion > 0 && (
+                <span className="flex items-center gap-1 bg-secondary/40 px-2 py-1 rounded">Discreción: <strong>{node.discretion}/5</strong></span>
+              )}
+              {node.kindness && node.kindness > 0 && (
+                <span className="flex items-center gap-1 bg-secondary/40 px-2 py-1 rounded">Trato: <strong>{node.kindness}/5</strong></span>
               )}
             </div>
           )}
