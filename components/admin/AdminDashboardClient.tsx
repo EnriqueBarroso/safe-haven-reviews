@@ -5,13 +5,16 @@ import Link from "next/link"
 import {
   deleteReview, dismissReport, deleteQuestion,
   suspendUser, unsuspendUser, deleteUserAndContent,
-  deleteProfile, updateProfileAddress,
+  deleteProfile, updateProfile,
+  type ProfileUpdateData,
 } from "@/app/admin/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import {
   Trash2, CheckCircle, AlertCircle, MessageSquare,
   Loader2, Users, ShieldOff, ShieldCheck, UserX,
@@ -30,7 +33,9 @@ type AdminUser    = {
 }
 type ProfileAdmin = {
   id: string; name: string; city: string; slug: string
-  category: string | null; image_url: string | null
+  category: string | null; service_type: string | null
+  price_range: string | null; platform_url: string | null
+  image_url: string | null; tags: string[]
   created_at: string; reviewCount: number; questionCount: number
   address: string | null; lat: number | null; lng: number | null
 }
@@ -57,12 +62,17 @@ export function AdminDashboardClient({
   const [reports,       setReports]       = useState<Report[]>(initialReports)
   const [questions,     setQuestions]     = useState<QuestionRef[]>(initialQuestions)
   const [users,         setUsers]         = useState<AdminUser[]>(initialUsers)
-  const [profiles,        setProfiles]        = useState<ProfileAdmin[]>(initialProfiles)
-  const [profileSearch,   setProfileSearch]   = useState("")
-  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
-  const [addressInput,    setAddressInput]    = useState("")
-  const [isPending,       startTransition]    = useTransition()
-  const [activeId,        setActiveId]        = useState<string | null>(null)
+  const [profiles,       setProfiles]      = useState<ProfileAdmin[]>(initialProfiles)
+  const [profileSearch,  setProfileSearch] = useState("")
+  const [editingId,      setEditingId]     = useState<string | null>(null)
+  const [editForm,       setEditForm]      = useState<ProfileUpdateData>({
+    name: "", city: "", address: "", category: "",
+    service_type: "", price_range: "", platform_url: "",
+    image_url: "", tags: [],
+  })
+  const [tagsInput,      setTagsInput]     = useState("")
+  const [isPending,      startTransition]  = useTransition()
+  const [activeId,       setActiveId]      = useState<string | null>(null)
 
   // ── Reportes ──────────────────────────────────────────────
   const handleDismissReport = (reportId: string) => {
@@ -164,26 +174,54 @@ export function AdminDashboardClient({
     })
   }
 
-  const handleEditAddress = (p: ProfileAdmin) => {
-    setEditingAddressId(p.id)
-    setAddressInput(p.address ?? "")
+  const handleEditProfile = (p: ProfileAdmin) => {
+    setEditingId(p.id)
+    const t = { ...p.tags }
+    setEditForm({
+      name:         p.name          ?? "",
+      city:         p.city          ?? "",
+      address:      p.address       ?? "",
+      category:     p.category      ?? "",
+      service_type: p.service_type  ?? "",
+      price_range:  p.price_range   ?? "",
+      platform_url: p.platform_url  ?? "",
+      image_url:    p.image_url     ?? "",
+      tags:         p.tags          ?? [],
+    })
+    setTagsInput((p.tags ?? []).join(", "))
   }
 
-  const handleSaveAddress = (profileId: string) => {
+  const handleSaveProfile = (profileId: string) => {
+    const finalTags = tagsInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+    const data: ProfileUpdateData = { ...editForm, tags: finalTags }
     setActiveId(profileId)
     startTransition(async () => {
-      const { error, lat, lng } = await updateProfileAddress(profileId, addressInput)
+      const { error } = await updateProfile(profileId, data)
       if (error) {
-        alert("Error al guardar la dirección: " + error)
+        alert("Error al guardar el perfil: " + error)
       } else {
         setProfiles((prev) =>
           prev.map((p) =>
             p.id === profileId
-              ? { ...p, address: addressInput.trim() || null, lat, lng }
+              ? {
+                  ...p,
+                  name:         data.name         || p.name,
+                  city:         data.city         || p.city,
+                  address:      data.address      || null,
+                  category:     data.category     || null,
+                  service_type: data.service_type || null,
+                  price_range:  data.price_range  || null,
+                  platform_url: data.platform_url || null,
+                  image_url:    data.image_url    || null,
+                  tags:         finalTags,
+                }
               : p
           )
         )
-        setEditingAddressId(null)
+        setEditingId(null)
       }
       setActiveId(null)
     })
@@ -397,6 +435,7 @@ export function AdminDashboardClient({
               return (
                 <Card key={p.id} className="overflow-hidden hover:border-border transition-colors">
                   <CardContent className="p-4 space-y-3">
+                    {/* Fila principal */}
                     <div className="flex items-center gap-4">
                       {/* Thumbnail */}
                       <div className="h-14 w-14 rounded-lg overflow-hidden border bg-secondary shrink-0 flex items-center justify-center">
@@ -417,6 +456,9 @@ export function AdminDashboardClient({
                           {p.category && (
                             <Badge variant="outline" className="text-[10px] py-0 capitalize">{p.category}</Badge>
                           )}
+                          {p.service_type && (
+                            <Badge variant="secondary" className="text-[10px] py-0 capitalize">{p.service_type}</Badge>
+                          )}
                         </div>
                         <p className="text-[11px] text-muted-foreground">
                           {p.reviewCount} reseña{p.reviewCount !== 1 ? "s" : ""}
@@ -429,35 +471,24 @@ export function AdminDashboardClient({
                           <p className="text-[11px] text-primary/70 flex items-center gap-1 mt-0.5">
                             <MapPin className="h-3 w-3 shrink-0" />
                             {p.address}
-                            {p.lat && (
-                              <span className="text-green-600 ml-1">✓ geolocalizado</span>
-                            )}
+                            {p.lat && <span className="text-green-600 ml-1">✓ geo</span>}
                           </p>
                         )}
                       </div>
 
                       {/* Acciones */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <Button
-                          variant="outline" size="sm"
-                          className="gap-1.5"
-                          asChild
-                        >
+                        <Button variant="outline" size="sm" className="gap-1.5" asChild>
                           <Link href={`/profiles/${p.slug}`} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="h-3.5 w-3.5" /> Ver
                           </Link>
                         </Button>
                         <Button
-                          variant="outline" size="sm"
-                          className="gap-1.5"
-                          onClick={() =>
-                            editingAddressId === p.id
-                              ? setEditingAddressId(null)
-                              : handleEditAddress(p)
-                          }
+                          variant="outline" size="sm" className="gap-1.5"
+                          onClick={() => editingId === p.id ? setEditingId(null) : handleEditProfile(p)}
                         >
-                          <MapPin className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">Dirección</span>
+                          <Pencil className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Editar</span>
                         </Button>
                         <Button
                           variant="ghost" size="sm"
@@ -465,42 +496,147 @@ export function AdminDashboardClient({
                           disabled={isActingOn}
                           onClick={() => handleDeleteProfile(p.id)}
                         >
-                          {isActingOn ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Trash2 className="h-3.5 w-3.5" /> Eliminar</>}
+                          {isActingOn
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <><Trash2 className="h-3.5 w-3.5" /> Eliminar</>
+                          }
                         </Button>
                       </div>
                     </div>
 
-                    {/* Formulario inline de dirección */}
-                    {editingAddressId === p.id && (
-                      <div className="pt-2 border-t flex flex-col sm:flex-row gap-2">
-                        <Input
-                          autoFocus
-                          placeholder="Dirección aproximada del local (ej: Calle Gran Vía 10, Madrid)"
-                          value={addressInput}
-                          onChange={(e) => setAddressInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") { e.preventDefault(); handleSaveAddress(p.id) }
-                            if (e.key === "Escape") setEditingAddressId(null)
-                          }}
-                          className="flex-1 text-sm"
-                        />
-                        <div className="flex gap-2 shrink-0">
+                    {/* Formulario inline de edición completa */}
+                    {editingId === p.id && (
+                      <div className="pt-3 border-t space-y-4">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Nombre</Label>
+                            <Input
+                              autoFocus
+                              value={editForm.name}
+                              onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Ciudad</Label>
+                            <Input
+                              value={editForm.city}
+                              onChange={(e) => setEditForm((f) => ({ ...f, city: e.target.value }))}
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Categoría</Label>
+                            <Select
+                              value={editForm.category}
+                              onValueChange={(v) => setEditForm((f) => ({ ...f, category: v }))}
+                            >
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Selecciona..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="mujer">Mujer</SelectItem>
+                                <SelectItem value="trans">Trans</SelectItem>
+                                <SelectItem value="pareja">Pareja</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Tipo de servicio</Label>
+                            <Select
+                              value={editForm.service_type}
+                              onValueChange={(v) => setEditForm((f) => ({ ...f, service_type: v }))}
+                            >
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Selecciona..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="piso">Piso</SelectItem>
+                                <SelectItem value="agencia">Agencia</SelectItem>
+                                <SelectItem value="club">Club</SelectItem>
+                                <SelectItem value="independiente">Independiente</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Rango de precio</Label>
+                            <Select
+                              value={editForm.price_range}
+                              onValueChange={(v) => setEditForm((f) => ({ ...f, price_range: v }))}
+                            >
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Selecciona..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="económico">Económico</SelectItem>
+                                <SelectItem value="medio">Medio</SelectItem>
+                                <SelectItem value="alto">Alto</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">URL del anuncio</Label>
+                            <Input
+                              type="url"
+                              value={editForm.platform_url}
+                              onChange={(e) => setEditForm((f) => ({ ...f, platform_url: e.target.value }))}
+                              placeholder="https://..."
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">URL de la imagen</Label>
+                            <Input
+                              type="url"
+                              value={editForm.image_url}
+                              onChange={(e) => setEditForm((f) => ({ ...f, image_url: e.target.value }))}
+                              placeholder="https://..."
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              Dirección{" "}
+                              <span className="font-normal text-muted-foreground">(se geocodificará)</span>
+                            </Label>
+                            <Input
+                              value={editForm.address}
+                              onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
+                              placeholder="Calle, barrio o zona aproximada"
+                              className="text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">
+                            Tags{" "}
+                            <span className="font-normal text-muted-foreground">(separados por coma)</span>
+                          </Label>
+                          <Input
+                            value={tagsInput}
+                            onChange={(e) => setTagsInput(e.target.value)}
+                            placeholder="Activa, Grande, Operada..."
+                            className="text-sm"
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-1">
                           <Button
-                            size="sm"
-                            className="gap-1.5"
+                            variant="ghost" size="sm"
+                            onClick={() => setEditingId(null)}
+                          >
+                            <X className="h-3.5 w-3.5 mr-1" /> Cancelar
+                          </Button>
+                          <Button
+                            size="sm" className="gap-1.5"
                             disabled={isPending && activeId === p.id}
-                            onClick={() => handleSaveAddress(p.id)}
+                            onClick={() => handleSaveProfile(p.id)}
                           >
                             {isPending && activeId === p.id
                               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              : <><Check className="h-3.5 w-3.5" /> Guardar</>
+                              : <><Check className="h-3.5 w-3.5" /> Guardar cambios</>
                             }
-                          </Button>
-                          <Button
-                            size="sm" variant="ghost"
-                            onClick={() => setEditingAddressId(null)}
-                          >
-                            <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>

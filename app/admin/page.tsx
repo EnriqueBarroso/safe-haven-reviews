@@ -35,7 +35,8 @@ export default async function AdminPage() {
     supabase
       .from("profiles")
       .select(`
-        id, name, city, slug, category, image_url, created_at,
+        id, name, city, slug, category, service_type, price_range,
+        platform_url, image_url, tags, created_at,
         address, lat, lng,
         reviews ( id ),
         questions ( id )
@@ -48,12 +49,16 @@ export default async function AdminPage() {
     name:          p.name,
     city:          p.city,
     slug:          p.slug,
-    category:      p.category ?? null,
-    image_url:     p.image_url ?? null,
+    category:      p.category     ?? null,
+    service_type:  p.service_type ?? null,
+    price_range:   p.price_range  ?? null,
+    platform_url:  p.platform_url ?? null,
+    image_url:     p.image_url    ?? null,
+    tags:          p.tags         ?? [],
     created_at:    p.created_at,
-    address:       p.address ?? null,
-    lat:           p.lat ?? null,
-    lng:           p.lng ?? null,
+    address:       p.address      ?? null,
+    lat:           p.lat          ?? null,
+    lng:           p.lng          ?? null,
     reviewCount:   (p.reviews   ?? []).length,
     questionCount: (p.questions ?? []).length,
   }))

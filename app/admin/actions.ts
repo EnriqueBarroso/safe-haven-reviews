@@ -123,6 +123,73 @@ export async function deleteUserAndContent(userId: string): Promise<{ error: str
 
 // ── Gestión de perfiles ───────────────────────────────────────
 
+export interface ProfileUpdateData {
+  name:         string
+  city:         string
+  address:      string
+  category:     string
+  service_type: string
+  price_range:  string
+  platform_url: string
+  image_url:    string
+  tags:         string[]
+}
+
+export async function updateProfile(
+  profileId: string,
+  data: ProfileUpdateData,
+): Promise<{ error: string | null }> {
+  try {
+    await requireAdmin()
+    const admin = createAdminClient()
+
+    let lat: number | null = null
+    let lng: number | null = null
+
+    const addressTrimmed = data.address.trim()
+    if (addressTrimmed) {
+      try {
+        const res  = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressTrimmed)}&format=json&limit=1`,
+          { headers: { "User-Agent": "YaFui/1.0" } },
+        )
+        const geo = await res.json()
+        if (Array.isArray(geo) && geo.length > 0) {
+          lat = parseFloat(geo[0].lat)
+          lng = parseFloat(geo[0].lon)
+        }
+      } catch {
+        // Geocodificación opcional — guardamos address sin coordenadas
+      }
+    }
+
+    const { error } = await admin
+      .from("profiles")
+      .update({
+        name:         data.name.trim()         || null,
+        city:         data.city.trim()         || null,
+        address:      addressTrimmed           || null,
+        category:     data.category            || null,
+        service_type: data.service_type        || null,
+        price_range:  data.price_range         || null,
+        platform_url: data.platform_url.trim() || null,
+        image_url:    data.image_url.trim()    || null,
+        tags:         data.tags,
+        lat,
+        lng,
+      })
+      .eq("id", profileId)
+
+    if (error) return { error: error.message }
+    revalidatePath("/admin")
+    revalidatePath("/profiles")
+    revalidatePath("/mapa")
+    return { error: null }
+  } catch (e: any) {
+    return { error: e.message }
+  }
+}
+
 export async function updateProfileAddress(
   profileId: string,
   address: string,
