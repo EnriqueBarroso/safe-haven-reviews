@@ -11,6 +11,8 @@ export type TreeNode = {
   punctuality?: number | null
   communication?: number | null
   hygiene?: number | null
+  discretion?: number | null
+  kindness?: number | null
   overall?: number | null
   price?: number | null
   duration?: number | null

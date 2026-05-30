@@ -60,6 +60,8 @@ export default async function ProfileDetailPage({
     punctualityAvg:   avg("punctuality"),
     communicationAvg: avg("communication"),
     hygieneAvg:       avg("hygiene"),
+    discretionAvg:    avg("discretion"),
+    kindnessAvg:      avg("kindness"),
   }
 
   // Cover image (antes era una IIFE dentro del render)

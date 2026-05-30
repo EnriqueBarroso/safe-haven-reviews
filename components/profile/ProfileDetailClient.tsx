@@ -15,7 +15,7 @@ import {
 import { ShareBBCode } from "@/components/profile/share-bbcode"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ThreadNode } from "@/components/profile/Threadnode"
+import { ThreadNode } from "@/components/profile/ThreadNode"
 import type { TreeNode } from "@/lib/build-tree"
 
 type Stats = {
@@ -25,6 +25,8 @@ type Stats = {
   punctualityAvg:   number
   communicationAvg: number
   hygieneAvg:       number
+  discretionAvg:    number
+  kindnessAvg:      number
 }
 
 interface Props {
@@ -287,8 +289,10 @@ export function ProfileDetailClient({
               {[
                 { label: "Veracidad de fotos", value: stats.veracityAvg },
                 { label: "Puntualidad",        value: stats.punctualityAvg },
-                { label: "Comunicación",        value: stats.communicationAvg },
-                { label: "Higiene y limpieza",  value: stats.hygieneAvg },
+                { label: "Comunicación",       value: stats.communicationAvg },
+                { label: "Higiene y limpieza", value: stats.hygieneAvg },
+                { label: "Discreción",         value: stats.discretionAvg },
+                { label: "Trato / Amabilidad", value: stats.kindnessAvg },
               ].map(({ label, value }) => (
                 <div key={label} className="space-y-1.5">
                   <div className="flex justify-between text-sm">

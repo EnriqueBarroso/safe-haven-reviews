@@ -3,13 +3,15 @@
 import { useEffect } from "react"
 import { Slider } from "@/components/ui/slider"
 import { StarPicker } from "@/components/review/Starpicker"
-import { Camera, Clock, MessageSquare, Sparkles, TrendingUp, Star } from "lucide-react"
+import { Camera, Clock, MessageSquare, Sparkles, TrendingUp, Star, EyeOff, Heart } from "lucide-react"
 
 export interface Ratings {
   veracity: number
   punctuality: number
   communication: number
   hygiene: number
+  discretion: number
+  kindness: number
   overall: number
   value_price: number
 }
@@ -44,6 +46,18 @@ const CATEGORIES = [
     description: "¿El entorno y la persona estaban limpios?",
     icon: Sparkles,
   },
+  {
+    key: "discretion" as const,
+    label: "Discreción",
+    description: "¿Fue discreta y respetó tu privacidad?",
+    icon: EyeOff,
+  },
+  {
+    key: "kindness" as const,
+    label: "Trato / Amabilidad",
+    description: "¿Fue amable y el trato fue agradable?",
+    icon: Heart,
+  },
 ]
 
 const VALUE_LABELS: Record<number, string> = {
@@ -61,18 +75,22 @@ export function RatingsBlock({ ratings, onChange }: RatingsBlockProps) {
 
   // Calcula overall automáticamente
   useEffect(() => {
-    const { veracity, punctuality, communication, hygiene } = ratings
-    if (veracity && punctuality && communication && hygiene) {
-      const avg = Math.round((veracity + punctuality + communication + hygiene) / 4)
+    const { veracity, punctuality, communication, hygiene, discretion, kindness } = ratings
+    if (veracity && punctuality && communication && hygiene && discretion && kindness) {
+      const avg = Math.round(
+        (veracity + punctuality + communication + hygiene + discretion + kindness) / 6
+      )
       onChange({ ...ratings, overall: avg })
     }
-  }, [ratings.veracity, ratings.punctuality, ratings.communication, ratings.hygiene])
+  }, [ratings.veracity, ratings.punctuality, ratings.communication, ratings.hygiene, ratings.discretion, ratings.kindness])
 
   const allRated =
     ratings.veracity > 0 &&
     ratings.punctuality > 0 &&
     ratings.communication > 0 &&
-    ratings.hygiene > 0
+    ratings.hygiene > 0 &&
+    ratings.discretion > 0 &&
+    ratings.kindness > 0
 
   return (
     <div className="space-y-6">

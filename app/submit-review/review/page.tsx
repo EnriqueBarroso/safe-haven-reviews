@@ -23,7 +23,7 @@ const TRANS_TAGS = [
 
 const INITIAL_RATINGS: Ratings = {
   veracity: 0, punctuality: 0, communication: 0,
-  hygiene: 0, overall: 0, value_price: 3,
+  hygiene: 0, discretion: 0, kindness: 0, overall: 0, value_price: 3,
 }
 
 function generateSlug(name: string, city: string): string {
