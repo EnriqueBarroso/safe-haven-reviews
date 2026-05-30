@@ -47,6 +47,10 @@ export default function SubmitReviewPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [userProfile, setUserProfile] = useState({ alias: "Usuario Anónimo", avatarUrl: "" })
 
+  const [existingProfile, setExistingProfile] = useState<{
+    id: string; name: string; city: string; category: string | null; slug: string
+  } | null>(null)
+
   const [reviewImages, setReviewImages] = useState<ImagePreview[]>([])
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
@@ -69,9 +73,22 @@ export default function SubmitReviewPage() {
           avatarUrl: s.user.user_metadata?.custom_avatar_url || "",
         })
       }
-      const name = searchParams.get("name")
-      const city = searchParams.get("city")
-      if (name && city) setFormData((p) => ({ ...p, name, city }))
+      const profileId = searchParams.get("profileId")
+      if (profileId) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id, name, city, category, slug")
+          .eq("id", profileId)
+          .single()
+        if (prof) {
+          setExistingProfile(prof)
+          setFormData((p) => ({ ...p, name: prof.name, city: prof.city }))
+        }
+      } else {
+        const name = searchParams.get("name")
+        const city = searchParams.get("city")
+        if (name && city) setFormData((p) => ({ ...p, name, city }))
+      }
       setIsLoadingSession(false)
     }
     init()
@@ -112,83 +129,91 @@ export default function SubmitReviewPage() {
         throw new Error("Por favor, completa todas las valoraciones.")
       }
 
-      const slug = generateSlug(formData.name, formData.city)
-
-      // Imagen del perfil
-      let finalProfileImageUrl = formData.profileImageUrl.trim()
-      if (profileImageFile) {
-        const fileExt = profileImageFile.name.split(".").pop()
-        const fileName = `${Date.now()}-${Math.random()}.${fileExt}`
-        const { error } = await supabase.storage
-          .from("profile_images").upload(fileName, profileImageFile)
-        if (error) throw new Error("Error al subir la foto: " + error.message)
-        const { data: { publicUrl } } = supabase.storage
-          .from("profile_images").getPublicUrl(fileName)
-        finalProfileImageUrl = publicUrl
-      }
-
-      // Geocodificar dirección con Nominatim (si se ha proporcionado)
-      let geoLat: number | null = null
-      let geoLng: number | null = null
-      const addressTrimmed = formData.address.trim()
-      if (addressTrimmed) {
-        try {
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressTrimmed)}&format=json&limit=1`,
-            { headers: { "User-Agent": "YaFui/1.0" } },
-          )
-          const geoData = await geoRes.json()
-          if (Array.isArray(geoData) && geoData.length > 0) {
-            geoLat = parseFloat(geoData[0].lat)
-            geoLng = parseFloat(geoData[0].lon)
-          }
-        } catch {
-          // Fallo silencioso — la dirección se guarda igualmente sin coordenadas
-        }
-      }
-
-      // Buscar o crear perfil
-      const { data: existing } = await supabase
-        .from("profiles").select("id, slug")
-        .ilike("name", formData.name.trim())
-        .ilike("city", formData.city.trim())
-        .maybeSingle()
-
       let profileId: string
+      let slug: string
 
-      if (existing) {
-        profileId = existing.id
-        const updates: Record<string, unknown> = {}
-        if (finalProfileImageUrl) updates.image_url = finalProfileImageUrl
-        if (addressTrimmed) {
-          updates.address = addressTrimmed
-          if (geoLat !== null) { updates.lat = geoLat; updates.lng = geoLng }
-        }
-        if (Object.keys(updates).length > 0) {
-          await supabase.from("profiles").update(updates).eq("id", profileId)
-        }
+      if (existingProfile) {
+        // Perfil conocido — no modificar sus datos
+        profileId = existingProfile.id
+        slug      = existingProfile.slug
       } else {
-        if (!formData.category || !formData.priceRange || !formData.serviceType) {
-          throw new Error("Completa la categoría, rango de precio y tipo de servicio.")
+        slug = generateSlug(formData.name, formData.city)
+
+        // Imagen del perfil
+        let finalProfileImageUrl = formData.profileImageUrl.trim()
+        if (profileImageFile) {
+          const fileExt = profileImageFile.name.split(".").pop()
+          const fileName = `${Date.now()}-${Math.random()}.${fileExt}`
+          const { error } = await supabase.storage
+            .from("profile_images").upload(fileName, profileImageFile)
+          if (error) throw new Error("Error al subir la foto: " + error.message)
+          const { data: { publicUrl } } = supabase.storage
+            .from("profile_images").getPublicUrl(fileName)
+          finalProfileImageUrl = publicUrl
         }
-        const { data: newProfile, error } = await supabase
-          .from("profiles").insert({
-            name: formData.name.trim(),
-            city: formData.city.trim(),
-            slug,
-            category: formData.category || null,
-            price_range: formData.priceRange || null,
-            service_type: formData.serviceType || null,
-            platform_url: formData.platformUrl.trim() || null,
-            image_url: finalProfileImageUrl || null,
-            tags: formData.tags,
-            seller_id: "user_submission",
-            address: addressTrimmed || null,
-            lat: geoLat,
-            lng: geoLng,
-          }).select().single()
-        if (error) throw error
-        profileId = newProfile.id
+
+        // Geocodificar dirección con Nominatim
+        let geoLat: number | null = null
+        let geoLng: number | null = null
+        const addressTrimmed = formData.address.trim()
+        if (addressTrimmed) {
+          try {
+            const geoRes = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressTrimmed)}&format=json&limit=1`,
+              { headers: { "User-Agent": "YaFui/1.0" } },
+            )
+            const geoData = await geoRes.json()
+            if (Array.isArray(geoData) && geoData.length > 0) {
+              geoLat = parseFloat(geoData[0].lat)
+              geoLng = parseFloat(geoData[0].lon)
+            }
+          } catch {
+            // Fallo silencioso — la dirección se guarda sin coordenadas
+          }
+        }
+
+        // Buscar o crear perfil
+        const { data: existing } = await supabase
+          .from("profiles").select("id, slug")
+          .ilike("name", formData.name.trim())
+          .ilike("city", formData.city.trim())
+          .maybeSingle()
+
+        if (existing) {
+          profileId = existing.id
+          slug      = existing.slug
+          const updates: Record<string, unknown> = {}
+          if (finalProfileImageUrl) updates.image_url = finalProfileImageUrl
+          if (addressTrimmed) {
+            updates.address = addressTrimmed
+            if (geoLat !== null) { updates.lat = geoLat; updates.lng = geoLng }
+          }
+          if (Object.keys(updates).length > 0) {
+            await supabase.from("profiles").update(updates).eq("id", profileId)
+          }
+        } else {
+          if (!formData.category || !formData.priceRange || !formData.serviceType) {
+            throw new Error("Completa la categoría, rango de precio y tipo de servicio.")
+          }
+          const { data: newProfile, error } = await supabase
+            .from("profiles").insert({
+              name: formData.name.trim(),
+              city: formData.city.trim(),
+              slug,
+              category:     formData.category           || null,
+              price_range:  formData.priceRange          || null,
+              service_type: formData.serviceType         || null,
+              platform_url: formData.platformUrl.trim()  || null,
+              image_url:    finalProfileImageUrl          || null,
+              tags:         formData.tags,
+              seller_id:    "user_submission",
+              address:      addressTrimmed               || null,
+              lat:          geoLat,
+              lng:          geoLng,
+            }).select().single()
+          if (error) throw error
+          profileId = newProfile.id
+        }
       }
 
       // Insertar reseña
@@ -266,7 +291,7 @@ export default function SubmitReviewPage() {
     )
   }
 
-  const isReadOnly = !!searchParams.get("name")
+  const isReadOnly = !existingProfile && !!searchParams.get("name")
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-3xl">
@@ -278,165 +303,184 @@ export default function SubmitReviewPage() {
         <CardContent className="pt-8">
           <form onSubmit={handlePublish} className="space-y-8">
 
-            {/* Info del perfil */}
-            <div className="space-y-4 p-6 bg-secondary/20 rounded-2xl border border-border/50">
-              <h3 className="font-semibold text-lg">Información del Perfil</h3>
-              {!isReadOnly && (
-                <p className="text-xs text-muted-foreground">
-                  Si el perfil no existe, se creará automáticamente.
-                </p>
-              )}
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Nombre / Alias</Label>
-                  <Input id="profile-name" value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    readOnly={isReadOnly}
-                    className={isReadOnly ? "bg-muted cursor-not-allowed" : ""}
-                    required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Ciudad</Label>
-                  <Input id="profile-city" value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    readOnly={isReadOnly}
-                    className={isReadOnly ? "bg-muted cursor-not-allowed" : ""}
-                    required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Categoría</Label>
-                  <Select onValueChange={(v) => setFormData({ ...formData, category: v, tags: [] })} required>
-                    <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="chica">Chica</SelectItem>
-                      <SelectItem value="trans">Trans</SelectItem>
-                      <SelectItem value="asiatica">Asiática</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Rango de Precio</Label>
-                  <Select onValueChange={(v) => setFormData({ ...formData, priceRange: v })} required>
-                    <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="<150">Menos de 150€</SelectItem>
-                      <SelectItem value=">150">Más de 150€</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Tipo de Servicio</Label>
-                  <Select onValueChange={(v) => setFormData({ ...formData, serviceType: v })} required>
-                    <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="independiente">Independiente</SelectItem>
-                      <SelectItem value="piso_chicas">Piso de chicas / Agencia</SelectItem>
-                      <SelectItem value="masajes">Masajista / Piso de Masajes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Enlace al anuncio</Label>
-                  <Input type="url" value={formData.platformUrl}
-                    onChange={(e) => setFormData({ ...formData, platformUrl: e.target.value })}
-                    placeholder="https://..." />
-                </div>
-              </div>
-
-              {/* Dirección para el mapa */}
-              <div className="space-y-2">
-                <Label>
-                  Dirección del local{" "}
-                  <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
-                </Label>
-                <Input
-                  placeholder="Dirección aproximada del local (opcional, ayuda a ubicarlo en el mapa)"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground">
-                  No es obligatorio y basta con una referencia aproximada (calle, barrio o zona).
-                  Esta información se usa para mostrar el perfil en el mapa de la comunidad.
-                </p>
-              </div>
-
-              {/* Tags trans */}
-              {formData.category === "trans" && (
-                <div className="space-y-3 bg-background p-4 rounded-xl border">
-                  <Label className="text-sm font-semibold text-primary">
-                    Características{" "}
-                    <span className="font-normal text-muted-foreground">(Opcional)</span>
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {TRANS_TAGS.map((tag) => (
-                      <Badge key={tag}
-                        variant={formData.tags.includes(tag) ? "default" : "outline"}
-                        className={`cursor-pointer px-3 py-1.5 transition-all ${
-                          formData.tags.includes(tag)
-                            ? "bg-primary hover:bg-primary/90"
-                            : "hover:bg-secondary"
-                        }`}
-                        onClick={() => toggleTag(tag)}>
-                        {tag}
+            {/* Info del perfil — resumen si ya existe, formulario completo si es nuevo */}
+            {existingProfile ? (
+              <div className="flex items-center gap-4 p-5 bg-secondary/20 rounded-2xl border border-border/50">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+                    Escribiendo reseña sobre
+                  </p>
+                  <p className="text-xl font-bold truncate">{existingProfile.name}</p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className="text-sm text-muted-foreground">{existingProfile.city}</span>
+                    {existingProfile.category && (
+                      <Badge variant="outline" className="capitalize text-xs">
+                        {existingProfile.category}
                       </Badge>
-                    ))}
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
+            ) : (
+              <div className="space-y-4 p-6 bg-secondary/20 rounded-2xl border border-border/50">
+                <h3 className="font-semibold text-lg">Información del Perfil</h3>
+                {!isReadOnly && (
+                  <p className="text-xs text-muted-foreground">
+                    Si el perfil no existe, se creará automáticamente.
+                  </p>
+                )}
 
-              {/* Imagen del perfil */}
-              <div className="p-4 bg-background border rounded-xl space-y-4">
-                <Label className="font-semibold flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-primary" />
-                  Foto del perfil
-                  <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
-                </Label>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 space-y-2">
-                    <Label className="text-xs text-muted-foreground">URL de la imagen</Label>
-                    <Input placeholder="https://ejemplo.com/foto.jpg"
-                      value={formData.profileImageUrl}
-                      onChange={(e) => {
-                        setFormData({ ...formData, profileImageUrl: e.target.value })
-                        setProfileImagePreview(e.target.value)
-                      }}
-                      disabled={!!profileImageFile}
-                      className={profileImageFile ? "bg-muted cursor-not-allowed" : ""} />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Nombre / Alias</Label>
+                    <Input id="profile-name" value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      readOnly={isReadOnly}
+                      className={isReadOnly ? "bg-muted cursor-not-allowed" : ""}
+                      required />
                   </div>
-                  <div className="flex items-center justify-center pt-6">
-                    <span className="text-muted-foreground">O</span>
+                  <div className="space-y-2">
+                    <Label>Ciudad</Label>
+                    <Input id="profile-city" value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      readOnly={isReadOnly}
+                      className={isReadOnly ? "bg-muted cursor-not-allowed" : ""}
+                      required />
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <Label className="text-xs text-muted-foreground">Subir archivo</Label>
-                    <Input type="file" accept="image/*"
-                      onChange={handleProfileImageFile}
-                      className="cursor-pointer file:text-primary file:bg-primary/10 file:border-0 file:mr-4 file:px-4 file:py-1 file:rounded-full" />
+                  <div className="space-y-2">
+                    <Label>Categoría</Label>
+                    <Select onValueChange={(v) => setFormData({ ...formData, category: v, tags: [] })} required>
+                      <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="chica">Chica</SelectItem>
+                        <SelectItem value="trans">Trans</SelectItem>
+                        <SelectItem value="asiatica">Asiática</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Rango de Precio</Label>
+                    <Select onValueChange={(v) => setFormData({ ...formData, priceRange: v })} required>
+                      <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="<150">Menos de 150€</SelectItem>
+                        <SelectItem value=">150">Más de 150€</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo de Servicio</Label>
+                    <Select onValueChange={(v) => setFormData({ ...formData, serviceType: v })} required>
+                      <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="independiente">Independiente</SelectItem>
+                        <SelectItem value="piso_chicas">Piso de chicas / Agencia</SelectItem>
+                        <SelectItem value="masajes">Masajista / Piso de Masajes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Enlace al anuncio</Label>
+                    <Input type="url" value={formData.platformUrl}
+                      onChange={(e) => setFormData({ ...formData, platformUrl: e.target.value })}
+                      placeholder="https://..." />
                   </div>
                 </div>
-                {profileImagePreview && (
-                  <div className="flex items-center gap-4 p-3 bg-secondary/30 rounded-lg border border-dashed">
-                    <div className="h-20 w-20 rounded-md overflow-hidden border shadow-sm shrink-0">
-                      <img src={profileImagePreview} alt="Preview"
-                        className="h-full w-full object-cover"
-                        onError={() => setProfileImagePreview(null)} />
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-medium">Imagen del perfil</p>
-                      <Button variant="link" size="sm" type="button"
-                        className="h-auto p-0 text-destructive mt-1"
-                        onClick={() => {
-                          setProfileImageFile(null)
-                          setProfileImagePreview(null)
-                          setFormData({ ...formData, profileImageUrl: "" })
-                        }}>
-                        Quitar imagen
-                      </Button>
+
+                {/* Dirección para el mapa */}
+                <div className="space-y-2">
+                  <Label>
+                    Dirección del local{" "}
+                    <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
+                  </Label>
+                  <Input
+                    placeholder="Dirección aproximada del local (opcional, ayuda a ubicarlo en el mapa)"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    No es obligatorio y basta con una referencia aproximada (calle, barrio o zona).
+                    Esta información se usa para mostrar el perfil en el mapa de la comunidad.
+                  </p>
+                </div>
+
+                {/* Tags trans */}
+                {formData.category === "trans" && (
+                  <div className="space-y-3 bg-background p-4 rounded-xl border">
+                    <Label className="text-sm font-semibold text-primary">
+                      Características{" "}
+                      <span className="font-normal text-muted-foreground">(Opcional)</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {TRANS_TAGS.map((tag) => (
+                        <Badge key={tag}
+                          variant={formData.tags.includes(tag) ? "default" : "outline"}
+                          className={`cursor-pointer px-3 py-1.5 transition-all ${
+                            formData.tags.includes(tag)
+                              ? "bg-primary hover:bg-primary/90"
+                              : "hover:bg-secondary"
+                          }`}
+                          onClick={() => toggleTag(tag)}>
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                 )}
+
+                {/* Imagen del perfil */}
+                <div className="p-4 bg-background border rounded-xl space-y-4">
+                  <Label className="font-semibold flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-primary" />
+                    Foto del perfil
+                    <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
+                  </Label>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs text-muted-foreground">URL de la imagen</Label>
+                      <Input placeholder="https://ejemplo.com/foto.jpg"
+                        value={formData.profileImageUrl}
+                        onChange={(e) => {
+                          setFormData({ ...formData, profileImageUrl: e.target.value })
+                          setProfileImagePreview(e.target.value)
+                        }}
+                        disabled={!!profileImageFile}
+                        className={profileImageFile ? "bg-muted cursor-not-allowed" : ""} />
+                    </div>
+                    <div className="flex items-center justify-center pt-6">
+                      <span className="text-muted-foreground">O</span>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs text-muted-foreground">Subir archivo</Label>
+                      <Input type="file" accept="image/*"
+                        onChange={handleProfileImageFile}
+                        className="cursor-pointer file:text-primary file:bg-primary/10 file:border-0 file:mr-4 file:px-4 file:py-1 file:rounded-full" />
+                    </div>
+                  </div>
+                  {profileImagePreview && (
+                    <div className="flex items-center gap-4 p-3 bg-secondary/30 rounded-lg border border-dashed">
+                      <div className="h-20 w-20 rounded-md overflow-hidden border shadow-sm shrink-0">
+                        <img src={profileImagePreview} alt="Preview"
+                          className="h-full w-full object-cover"
+                          onError={() => setProfileImagePreview(null)} />
+                      </div>
+                      <div className="text-sm">
+                        <p className="font-medium">Imagen del perfil</p>
+                        <Button variant="link" size="sm" type="button"
+                          className="h-auto p-0 text-destructive mt-1"
+                          onClick={() => {
+                            setProfileImageFile(null)
+                            setProfileImagePreview(null)
+                            setFormData({ ...formData, profileImageUrl: "" })
+                          }}>
+                          Quitar imagen
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Valoraciones */}
             <div className="border-t pt-8">
@@ -477,7 +521,7 @@ export default function SubmitReviewPage() {
               <div className="space-y-2">
                 <Label>Narra tu experiencia</Label>
                 <Textarea placeholder="Cuéntanos cómo fue todo..."
-                  className="min-h-[180px]" value={formData.details}
+                  className="min-h-45" value={formData.details}
                   onChange={(e) => setFormData({ ...formData, details: e.target.value })}
                   required />
               </div>
