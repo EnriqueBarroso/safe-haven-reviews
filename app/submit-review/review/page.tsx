@@ -50,6 +50,7 @@ export default function SubmitReviewPage() {
   const [existingProfile, setExistingProfile] = useState<{
     id: string; name: string; city: string; category: string | null; slug: string
   } | null>(null)
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false)
 
   const [reviewImages, setReviewImages] = useState<ImagePreview[]>([])
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
@@ -83,6 +84,16 @@ export default function SubmitReviewPage() {
         if (prof) {
           setExistingProfile(prof)
           setFormData((p) => ({ ...p, name: prof.name, city: prof.city }))
+          // Comprobar si el usuario ya reseñó este perfil
+          if (s?.user) {
+            const { count } = await supabase
+              .from("reviews")
+              .select("id", { count: "exact", head: true })
+              .eq("profile_id", profileId)
+              .eq("user_id", s.user.id)
+              .is("parent_id", null)
+            if ((count ?? 0) > 0) setAlreadyReviewed(true)
+          }
         }
       } else {
         const name = searchParams.get("name")
@@ -286,6 +297,29 @@ export default function SubmitReviewPage() {
           <Button size="lg" asChild><Link href="/auth/register">Crear cuenta anónima</Link></Button>
           <Button variant="outline" asChild><Link href="/auth/signin">Ya tengo cuenta</Link></Button>
           <Button variant="ghost" asChild className="mt-4"><Link href="/">Volver al inicio</Link></Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (alreadyReviewed && existingProfile) {
+    return (
+      <div className="container mx-auto py-20 px-4 max-w-md text-center">
+        <div className="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <AlertCircle className="h-10 w-10 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold mb-3">Ya has reseñado este perfil</h1>
+        <p className="text-muted-foreground mb-8">
+          Solo se permite una reseña por perfil. Puedes editar tu reseña desde Mi Panel o responder
+          a comentarios dentro de ella.
+        </p>
+        <div className="flex flex-col gap-3">
+          <Button size="lg" asChild>
+            <Link href="/dashboard">Ir a Mi Panel</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/profiles/${existingProfile.slug}`}>Ver perfil</Link>
+          </Button>
         </div>
       </div>
     )
