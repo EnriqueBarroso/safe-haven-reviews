@@ -66,11 +66,12 @@ export function EditQuestionModal({ question, userId, onClose, onSave }: EditQue
     try {
       // Subir nuevas imágenes → review_images.question_id
       for (let i = 0; i < newImages.length; i++) {
-        const { file } = newImages[i]
-        const ext      = file.name.split(".").pop()
+        const img = newImages[i]
+        if (!img.file) continue
+        const ext      = img.file.name.split(".").pop()
         const fileName = `forum/${userId}/${question.id}-${Date.now()}-${i}.${ext}`
         const { error: upErr } = await supabase.storage
-          .from("review_images").upload(fileName, file)
+          .from("review_images").upload(fileName, img.file)
         if (upErr) continue
         const { data: { publicUrl } } = supabase.storage
           .from("review_images").getPublicUrl(fileName)

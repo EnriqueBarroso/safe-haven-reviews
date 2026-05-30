@@ -92,14 +92,30 @@ export function DashboardClient({
   // ── Editar reseña ─────────────────────────────────────────────
   const handleSaveReviewEdit = async (
     id:      string,
-    changes: { comment: string; price: number; duration: number; phone: string | null }
+    changes: {
+      comment: string; price: number; duration: number; phone: string | null
+      veracity?: number; punctuality?: number; hygiene?: number
+      value?: number; discretion?: number; kindness?: number
+    }
   ) => {
     const { error } = await editReview(id, changes)
     if (!error) {
       setReviews((prev) =>
         prev.map((r) =>
           r.id === id
-            ? { ...r, details: changes.comment, price: changes.price, duration: changes.duration, phone: changes.phone }
+            ? {
+                ...r,
+                details:     changes.comment,
+                price:       changes.price,
+                duration:    changes.duration,
+                phone:       changes.phone,
+                veracity:    changes.veracity    ?? r.veracity,
+                punctuality: changes.punctuality ?? r.punctuality,
+                hygiene:     changes.hygiene     ?? r.hygiene,
+                value_price: changes.value       ?? r.value_price,
+                discretion:  changes.discretion  ?? r.discretion,
+                kindness:    changes.kindness    ?? r.kindness,
+              }
             : r
         )
       )

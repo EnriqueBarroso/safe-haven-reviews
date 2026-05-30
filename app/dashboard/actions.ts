@@ -13,7 +13,18 @@ async function getAuthenticatedUser() {
 // ── Editar reseña ─────────────────────────────────────────────
 export async function editReview(
   id: string,
-  changes: { comment: string; price: number; duration: number; phone?: string | null }
+  changes: {
+    comment:     string
+    price:       number
+    duration:    number
+    phone?:      string | null
+    veracity?:   number
+    punctuality?: number
+    hygiene?:    number
+    value?:      number
+    discretion?: number
+    kindness?:   number
+  }
 ): Promise<{ error: string | null }> {
   try {
     const { supabase, user } = await getAuthenticatedUser()
@@ -21,10 +32,16 @@ export async function editReview(
     const { error } = await supabase
       .from("reviews")
       .update({
-        details:  changes.comment,
-        price:    changes.price,
-        duration: changes.duration,
-        phone:    changes.phone ?? null,
+        details:     changes.comment,
+        price:       changes.price,
+        duration:    changes.duration,
+        phone:       changes.phone ?? null,
+        veracity:    changes.veracity    ?? null,
+        punctuality: changes.punctuality ?? null,
+        hygiene:     changes.hygiene     ?? null,
+        value_price: changes.value       ?? null,
+        discretion:  changes.discretion  ?? null,
+        kindness:    changes.kindness    ?? null,
       })
       .eq("id",      id)
       .eq("user_id", user.id)

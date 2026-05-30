@@ -12,14 +12,24 @@ import {
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { Loader2, PenLine, X } from "lucide-react"
+import { MiniStars } from "@/components/profile/MiniStars"
 
 const MAX_IMAGES = 10
+
+interface RatingFields {
+  veracity:    number
+  punctuality: number
+  hygiene:     number
+  value:       number
+  discretion:  number
+  kindness:    number
+}
 
 interface EditReviewModalProps {
   review:  any | null
   userId:  string
   onClose: () => void
-  onSave:  (id: string, changes: { comment: string; price: number; duration: number; phone: string | null }) => Promise<void>
+  onSave:  (id: string, changes: { comment: string; price: number; duration: number; phone: string | null } & RatingFields) => Promise<void>
 }
 
 export function EditReviewModal({ review, userId, onClose, onSave }: EditReviewModalProps) {
@@ -27,9 +37,15 @@ export function EditReviewModal({ review, userId, onClose, onSave }: EditReviewM
   const [price,          setPrice]          = useState("")
   const [duration,       setDuration]       = useState("")
   const [phone,          setPhone]          = useState("")
+  const [ratings,        setRatings]        = useState<RatingFields>({
+    veracity: 0, punctuality: 0, hygiene: 0, value: 0, discretion: 0, kindness: 0,
+  })
   const [existingImages, setExistingImages] = useState<any[]>([])
   const [newImages,      setNewImages]      = useState<ImagePreview[]>([])
   const [isSaving,       setIsSaving]       = useState(false)
+
+  const setRating = (key: keyof RatingFields) => (v: number) =>
+    setRatings((prev) => ({ ...prev, [key]: v }))
 
   // Sync state when a different review is selected
   useEffect(() => {
@@ -38,6 +54,14 @@ export function EditReviewModal({ review, userId, onClose, onSave }: EditReviewM
     setPrice(String(review.price || ""))
     setDuration(String(review.duration || ""))
     setPhone(review.phone || "")
+    setRatings({
+      veracity:    review.veracity    || 0,
+      punctuality: review.punctuality || 0,
+      hygiene:     review.hygiene     || 0,
+      value:       review.value_price || 0,
+      discretion:  review.discretion  || 0,
+      kindness:    review.kindness    || 0,
+    })
     setExistingImages(
       [...(review.review_images || [])].sort((a: any, b: any) => a.position - b.position)
     )
@@ -55,11 +79,12 @@ export function EditReviewModal({ review, userId, onClose, onSave }: EditReviewM
     try {
       // Upload new images to Storage + insert DB rows
       for (let i = 0; i < newImages.length; i++) {
-        const { file } = newImages[i]
-        const ext      = file.name.split(".").pop()
+        const img = newImages[i]
+        if (!img.file) continue
+        const ext      = img.file.name.split(".").pop()
         const fileName = `${userId}/${review.id}-edit-${Date.now()}-${i}.${ext}`
         const { error: upErr } = await supabase.storage
-          .from("review_images").upload(fileName, file)
+          .from("review_images").upload(fileName, img.file)
         if (upErr) continue
         const { data: { publicUrl } } = supabase.storage
           .from("review_images").getPublicUrl(fileName)
@@ -70,12 +95,13 @@ export function EditReviewModal({ review, userId, onClose, onSave }: EditReviewM
           position:  existingImages.length + i,
         })
       }
-      // Server Action: update text fields + phone
+      // Server Action: update text fields + phone + ratings
       await onSave(review.id, {
         comment,
         price:    Number(price),
         duration: Number(duration),
         phone:    phone.trim() || null,
+        ...ratings,
       })
     } finally {
       setIsSaving(false)
@@ -123,6 +149,19 @@ export function EditReviewModal({ review, userId, onClose, onSave }: EditReviewM
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^0-9 +]/g, ""))}
             />
+          </div>
+
+          {/* Valoraciones */}
+          <div className="space-y-2">
+            <Label>Valoraciones</Label>
+            <div className="rounded-lg border bg-secondary/20 p-3 space-y-2">
+              <MiniStars label="Veracidad de fotos"   value={ratings.veracity}    onChange={setRating("veracity")} />
+              <MiniStars label="Puntualidad"          value={ratings.punctuality} onChange={setRating("punctuality")} />
+              <MiniStars label="Higiene y limpieza"   value={ratings.hygiene}     onChange={setRating("hygiene")} />
+              <MiniStars label="Calidad-precio"       value={ratings.value}       onChange={setRating("value")} />
+              <MiniStars label="Discreción"           value={ratings.discretion}  onChange={setRating("discretion")} />
+              <MiniStars label="Trato / Amabilidad"   value={ratings.kindness}    onChange={setRating("kindness")} />
+            </div>
           </div>
 
           {/* Texto */}
