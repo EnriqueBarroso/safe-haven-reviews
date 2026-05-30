@@ -535,9 +535,9 @@ export function AdminDashboardClient({
                                 <SelectValue placeholder="Selecciona..." />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="mujer">Mujer</SelectItem>
+                                <SelectItem value="chica">Chica</SelectItem>
                                 <SelectItem value="trans">Trans</SelectItem>
-                                <SelectItem value="pareja">Pareja</SelectItem>
+                                <SelectItem value="asiatica">Asiática</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -551,10 +551,9 @@ export function AdminDashboardClient({
                                 <SelectValue placeholder="Selecciona..." />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="piso">Piso</SelectItem>
-                                <SelectItem value="agencia">Agencia</SelectItem>
-                                <SelectItem value="club">Club</SelectItem>
                                 <SelectItem value="independiente">Independiente</SelectItem>
+                                <SelectItem value="piso_chicas">Piso de chicas / Agencia</SelectItem>
+                                <SelectItem value="masajes">Masajista / Piso de Masajes</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
